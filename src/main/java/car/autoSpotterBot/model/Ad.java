@@ -13,24 +13,19 @@ public class Ad {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    private BotUser user; // Der Benutzer, der die Anzeige erstellt hat
+    private BotUser user;
 
     @ManyToMany(mappedBy = "favoriteAds")
-    private List<BotUser> favoritedByUsers; // Benutzer, die diese Anzeige favorisiert haben
+    private List<BotUser> favoritedByUsers;
 
     @ManyToOne
     @JoinColumn(name = "stadt_id")
     private Stadt standort;
-
-    // Weitere Attribute der Anzeige
-    private String imageUrl;
-    private String manufacturer;
-    private String model;
-    private int buildYear;
-    private String color;
-    private int mileage;
-    private String price;
+    @Column(length = 5000)
+    private List<String> imageUrl;
+    @Column(length = 1000)
     private String description;
+
 
     public Long getId() {
         return id;
@@ -64,61 +59,14 @@ public class Ad {
         this.standort = standort;
     }
 
-    public String getImageUrl() {
+    public List<String> getImageUrl() {
         return imageUrl;
     }
 
-    public void setImageUrl(String imageUrl) {
+    public void setImageUrl(List<String> imageUrl) {
         this.imageUrl = imageUrl;
     }
 
-    public String getManufacturer() {
-        return manufacturer;
-    }
-
-    public void setManufacturer(String manufacturer) {
-        this.manufacturer = manufacturer;
-    }
-
-    public String getModel() {
-        return model;
-    }
-
-    public void setModel(String model) {
-        this.model = model;
-    }
-
-    public int getBuildYear() {
-        return buildYear;
-    }
-
-    public void setBuildYear(int buildYear) {
-        this.buildYear = buildYear;
-    }
-
-    public String getColor() {
-        return color;
-    }
-
-    public void setColor(String color) {
-        this.color = color;
-    }
-
-    public int getMileage() {
-        return mileage;
-    }
-
-    public void setMileage(int mileage) {
-        this.mileage = mileage;
-    }
-
-    public String getPrice() {
-        return price;
-    }
-
-    public void setPrice(String price) {
-        this.price = price;
-    }
 
     public String getDescription() {
         return description;

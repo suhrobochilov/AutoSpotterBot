@@ -1,4 +1,4 @@
-package car.autoSpotterBot.util;
+package car.autoSpotterBot.autoUtil;
 
 public class BotConstants {
 

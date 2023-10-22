@@ -1,9 +1,11 @@
 package car.autoSpotterBot;
 
+import car.autoSpotterBot.autoUtil.UserStateInAuto;
+import car.autoSpotterBot.autoUtil.UserStateManager;
 import car.autoSpotterBot.service.AdService;
 import car.autoSpotterBot.service.BotUserService;
 import car.autoSpotterBot.service.StadtService;
-import car.autoSpotterBot.util.Button;
+import car.autoSpotterBot.autoUtil.Button;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
@@ -17,7 +19,7 @@ public class AutoSpotterBotApplication {
 	private Button buttonService;
 	private  AdService adService;
 	private StadtService stadtService;
-
+	private UserStateManager userStateManager;
 
 	public static void main(String[] args) throws TelegramApiException{
 		AutoSpotterBotApplication autoSpotterBotApplication = new AutoSpotterBotApplication();
@@ -30,8 +32,9 @@ public class AutoSpotterBotApplication {
 		Button buttonService = context.getBean(Button.class);
 		AdService adService = context.getBean(AdService.class);
 		StadtService stadtService = context.getBean(StadtService.class);
+		UserStateManager userStateManager = context.getBean(UserStateManager.class);
 		TelegramBotsApi telegramBotsApi = new TelegramBotsApi(DefaultBotSession.class);
-		telegramBotsApi.registerBot( new MyBot(userService,buttonService, stadtService, adService));
+		telegramBotsApi.registerBot( new MyBot(userService,buttonService, stadtService, adService, userStateManager));
 	}
 
 }
