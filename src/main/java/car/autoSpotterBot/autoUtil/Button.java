@@ -1,5 +1,8 @@
 package car.autoSpotterBot.autoUtil;
 
+import car.autoSpotterBot.MyBot;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Service;
@@ -17,7 +20,6 @@ import java.util.List;
 @Service
 @Controller
 public class Button {
-
     public InlineKeyboardMarkup buildInlKeyboardForCities(long userId, List<String> buttons1, List<String> buttons2,
                                                           List<String> buttons3, List<String> buttons4, List<String> buttons5) {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
@@ -61,7 +63,8 @@ public class Button {
         replyKeyboardMarkup.setKeyboard(keyboard);
         return replyKeyboardMarkup;
     }
-    public InlineKeyboardMarkup inlKeyboardConfirmation(){
+
+    public InlineKeyboardMarkup inlKeyboardConfirmation() {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         List<InlineKeyboardButton> row = new ArrayList<>();
@@ -80,21 +83,47 @@ public class Button {
         inlineKeyboardMarkup.setKeyboard(rows);
         return inlineKeyboardMarkup;
     }
-    public InlineKeyboardMarkup inlKeyboardForAd(){
+
+    public InlineKeyboardMarkup inlKeyboardForMyAds() {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         List<InlineKeyboardButton> row = new ArrayList<>();
 
         InlineKeyboardButton morePhotosBtn = new InlineKeyboardButton();
         InlineKeyboardButton favoriteBtn = new InlineKeyboardButton();
-        morePhotosBtn.setText("Hamma rasmlar");
-        morePhotosBtn.setCallbackData("morePhotos");
-        favoriteBtn.setText("Favoritga qo'shish");
-        favoriteBtn.setCallbackData("favorite");
+        morePhotosBtn.setText("O'chirish");
+        morePhotosBtn.setCallbackData("delete");
+        favoriteBtn.setText("Qayta ishlash");
+        favoriteBtn.setCallbackData("edit");
 
         row.add(morePhotosBtn);
         row.add(favoriteBtn);
         rows.add(row);
+
+        inlineKeyboardMarkup.setKeyboard(rows);
+        return inlineKeyboardMarkup;
+    }
+
+    public InlineKeyboardMarkup inlKeyboardForAd(Long adID, Integer nextIndex) {
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        List<InlineKeyboardButton> row1 = new ArrayList<>();
+        List<InlineKeyboardButton> row2 = new ArrayList<>();
+        InlineKeyboardButton favoriteBtn = new InlineKeyboardButton();
+        InlineKeyboardButton next = new InlineKeyboardButton();
+        InlineKeyboardButton previous = new InlineKeyboardButton();
+        next.setText("Keyingi rasm ▶\uFE0F");
+        next.setCallbackData("nextPhoto_"+adID);
+        previous.setText("◀\uFE0F Oldingi rasm");
+        previous.setCallbackData("previousPhoto_"+adID+"_"+nextIndex);
+        favoriteBtn.setText("Favoritga qo'shish");
+        favoriteBtn.setCallbackData("favorite_" + adID+"_"+nextIndex);
+
+        row1.add(previous);
+        row1.add(next);
+        row2.add(favoriteBtn);
+        rows.add(row1);
+        rows.add(row2);
 
         inlineKeyboardMarkup.setKeyboard(rows);
         return inlineKeyboardMarkup;
@@ -153,6 +182,7 @@ public class Button {
 
         return inlineKeyboardMarkup;
     }
+
     public List<List<String>> getCities() {
         List<String> bundeslanderRow1 = Arrays.asList("Toshkent", "Andijon", "Buxoro");
         List<String> bundeslanderRow2 = Arrays.asList("Farg'ona", "Jizzax", "Sirdaryo");

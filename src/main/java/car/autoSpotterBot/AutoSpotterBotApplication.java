@@ -2,6 +2,7 @@ package car.autoSpotterBot;
 
 import car.autoSpotterBot.autoUtil.UserStateInAuto;
 import car.autoSpotterBot.autoUtil.UserStateManager;
+import car.autoSpotterBot.configuration.BotConfig;
 import car.autoSpotterBot.service.AdService;
 import car.autoSpotterBot.service.BotUserService;
 import car.autoSpotterBot.service.StadtService;
@@ -20,6 +21,7 @@ public class AutoSpotterBotApplication {
 	private  AdService adService;
 	private StadtService stadtService;
 	private UserStateManager userStateManager;
+	private BotConfig botConfig;
 
 	public static void main(String[] args) throws TelegramApiException{
 		AutoSpotterBotApplication autoSpotterBotApplication = new AutoSpotterBotApplication();
@@ -33,8 +35,9 @@ public class AutoSpotterBotApplication {
 		AdService adService = context.getBean(AdService.class);
 		StadtService stadtService = context.getBean(StadtService.class);
 		UserStateManager userStateManager = context.getBean(UserStateManager.class);
+		BotConfig botConfig = context.getBean(BotConfig.class);
 		TelegramBotsApi telegramBotsApi = new TelegramBotsApi(DefaultBotSession.class);
-		telegramBotsApi.registerBot( new MyBot(userService,buttonService, stadtService, adService, userStateManager));
+		telegramBotsApi.registerBot( new MyBot(userService,buttonService, stadtService, adService, userStateManager,botConfig));
 	}
 
 }

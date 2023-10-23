@@ -2,8 +2,10 @@ package car.autoSpotterBot.service;
 
 import car.autoSpotterBot.exception.AdNotFoundException;
 import car.autoSpotterBot.model.Ad;
+import car.autoSpotterBot.model.BotUser;
 import car.autoSpotterBot.model.Stadt;
 import car.autoSpotterBot.repository.AdRepository;
+import car.autoSpotterBot.repository.BotUserRepository;
 import car.autoSpotterBot.repository.StadtRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,8 @@ public class AdService {
     private final AdRepository adRepository;
     @Autowired
     private StadtRepository stadtRepository;
+    @Autowired
+    private BotUserRepository botUserRepository;
     @Autowired
     public AdService(AdRepository adRepository) {
         this.adRepository = adRepository;
@@ -82,6 +86,13 @@ public class AdService {
         Stadt stadt = stadtRepository.findByName(stadtName);
         if (stadt != null) {
             return adRepository.findByStandort(stadt);
+        }
+        return new ArrayList<>();
+    }
+    public List<Ad> findByUserId(Long userId) {
+        BotUser user = botUserRepository.findByTelegramId(userId);
+        if (user != null){
+            return adRepository.findByUserId(user.getId());
         }
         return new ArrayList<>();
     }

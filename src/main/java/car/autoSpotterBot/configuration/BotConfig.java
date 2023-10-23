@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Configuration
 @Component
 public class BotConfig {
-    @Value("${telegram.bot.token}")
+    @Value("${bot.token}")
     private String botToken;
 
     public String getBotToken() {
