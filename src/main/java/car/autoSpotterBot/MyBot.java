@@ -1,17 +1,17 @@
-
 package car.autoSpotterBot;
 
+import car.autoSpotterBot.autoUtil.AutoInterpreter;
+import car.autoSpotterBot.autoUtil.BotCallback;
+import car.autoSpotterBot.autoUtil.UserStateManager;
 import car.autoSpotterBot.button.Button;
 import car.autoSpotterBot.button.ButtonConstants;
 import car.autoSpotterBot.configuration.BotConfig;
-import car.autoSpotterBot.model.Ad;
 import car.autoSpotterBot.model.BotUser;
-import car.autoSpotterBot.service.AdService;
 import car.autoSpotterBot.service.BotUserService;
-import car.autoSpotterBot.service.StadtService;
-import car.autoSpotterBot.autoUtil.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -26,7 +26,9 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static car.autoSpotterBot.autoUtil.UserStateInAuto.*;
@@ -35,24 +37,23 @@ import static car.autoSpotterBot.autoUtil.UserStateInAuto.*;
 public class MyBot extends TelegramLongPollingBot implements BotCallback {
     private static final Logger log = LoggerFactory.getLogger(MyBot.class);
     private final Button button;
-    private final StadtService stadtService;
     private final BotUserService userService;
-    private final Map<Long, Ad> currentAdsMap = new HashMap<>();
-    private final Map<Long, UserStateInAuto> userStateMap = new HashMap<>();
-    private final AdService adService;
-    private final AutoInterpreter autoInterpreter;
     private final UserStateManager userStateManager;
-    private Map<Long, Integer> messageIdMap = new ConcurrentHashMap<>();
     private final BotConfig botConfig;
+    private final Map<Long, Integer> messageIdMap = new ConcurrentHashMap<>();
+    private AutoInterpreter autoInterpreter;
 
-    public MyBot(BotUserService userService, Button buttonService, StadtService stadtService, AdService adService, UserStateManager userStateManager, BotConfig botConfig) {
+    public MyBot(BotUserService userService, Button buttonService, UserStateManager userStateManager, BotConfig botConfig) {
         this.userService = userService;
         this.button = buttonService;
-        this.stadtService = stadtService;
-        this.adService = adService;
-        this.autoInterpreter = new AutoInterpreter(this, userService, buttonService, stadtService, adService, userStateManager);
         this.userStateManager = userStateManager;
         this.botConfig = botConfig;
+    }
+
+    @Autowired
+    @Lazy
+    public void setAutoInterpreter(AutoInterpreter autoInterpreter) {
+        this.autoInterpreter = autoInterpreter;
     }
 
     @Override

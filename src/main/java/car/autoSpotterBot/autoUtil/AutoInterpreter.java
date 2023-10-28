@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import static car.autoSpotterBot.autoUtil.UserStateInAuto.*;
 
 @Component
-@Service
 public class AutoInterpreter {
     private static final Logger log = LoggerFactory.getLogger(MyBot.class);
     private static final int PAGE_SIZE = 10;
