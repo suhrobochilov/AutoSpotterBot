@@ -15,7 +15,7 @@ public class Ad {
     @JoinColumn(name = "user_id", nullable = false)
     private BotUser user;
 
-    @ManyToMany(mappedBy = "favoriteAds")
+    @ManyToMany(fetch = FetchType.EAGER)
     private List<BotUser> favoritedByUsers;
 
     @ManyToOne
@@ -25,7 +25,8 @@ public class Ad {
     private List<String> imageUrl;
     @Column(length = 1000)
     private String description;
-
+    @Column(length = 5000)
+    private String videoUrl;
 
     public Long getId() {
         return id;
@@ -74,6 +75,14 @@ public class Ad {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getVideoUrl() {
+        return videoUrl;
+    }
+
+    public void setVideoUrl(String videoUrl) {
+        this.videoUrl = videoUrl;
     }
 }
 

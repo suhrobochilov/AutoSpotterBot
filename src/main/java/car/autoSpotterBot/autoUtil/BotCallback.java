@@ -6,7 +6,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 
 public interface BotCallback {
 
-    void editImageMessage(Long chatId, Integer messageId, String imageUrl, InlineKeyboardMarkup newKeyboard);
+    void editImageMessage(Long chatId, Integer messageId, String captionText, String imageUrl, String videoUrl, InlineKeyboardMarkup newKeyboard);
 
     void mainMenu(long chatId);
 

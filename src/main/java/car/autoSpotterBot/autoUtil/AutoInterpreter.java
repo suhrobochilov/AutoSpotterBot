@@ -9,14 +9,13 @@ import car.autoSpotterBot.service.BotUserService;
 import car.autoSpotterBot.service.StadtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageMedia;
-import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static car.autoSpotterBot.autoUtil.UserStateInAuto.*;
@@ -24,7 +23,6 @@ import static car.autoSpotterBot.autoUtil.UserStateInAuto.*;
 @Component
 public class AutoInterpreter {
     private static final Logger log = LoggerFactory.getLogger(MyBot.class);
-
     private final BotUserService userService;
     private final Button button;
     private final StadtService stadtService;
@@ -32,6 +30,7 @@ public class AutoInterpreter {
     private final BotCallback botCallback;
     private final Map<Long, Ad> currentAdsMap = new ConcurrentHashMap<>();
     private final UserStateManager userStateManager;
+    private Map<Long, Integer> photoIndexMap = new HashMap<>();
 
     public AutoInterpreter(BotCallback botCallback, BotUserService userService, Button buttonService, StadtService stadtService, AdService adService, UserStateManager userStateManager) {
         this.userService = userService;
@@ -42,93 +41,90 @@ public class AutoInterpreter {
         this.userStateManager = userStateManager;
     }
 
-    public void autoInterpret(Long chatId, String text, String photoUrl, Integer messageId) {
+    public void autoInterpret(Long chatId, String text, String photoUrl, String videoUrl, Integer messageId) {
         Ad currentAd = currentAdsMap.getOrDefault(chatId, new Ad());
 
-
         if (text != null) {
+            log.info("Text: " + text);
             switch (text) {
-                case "Toshkent", "Andijon", "Buxoro", "Farg'ona",
-                        "Jizzax", "Sirdaryo", "Namangan", "Samarqand",
-                        "Xorazm", "Surxandaryo", "Qashqadaryo",
-                        "Qoraqalpog'iston", "Navoi", "Hammasini ko'rsatish" ->
+                case "Toshkent", "Andijon", "Buxoro", "Farg'ona", "Jizzax", "Sirdaryo", "Namangan", "Samarqand", "Xorazm", "Surxandaryo", "Qashqadaryo", "Qoraqalpog'iston", "Navoi", "Hammasini ko'rsatish" ->
                         validateUserState(chatId, text, currentAd);
                 case "Tasdiqlash" -> finalizeAndSaveAd(chatId, currentAd);
                 case "Bekor qilish" -> cancelAutoAd(chatId);
-                case "morePhotos_" -> getAllPhotos(chatId, text);
+                case ButtonConstants.nextPage -> nextPage(chatId);
+                case ButtonConstants.previousPage -> previousPage(chatId);
                 case ButtonConstants.auto -> auto(chatId);
                 case ButtonConstants.placeAutoAd -> initializeNewAd(chatId);
                 case ButtonConstants.autoSearch -> autoSearch(chatId);
                 case ButtonConstants.mayAutoAds -> getMyAds(chatId);
                 case ButtonConstants.backInAutoAd -> back(chatId);
             }
-        }
-
-        if (text.startsWith("nextPhoto")) {
-           handleCallbackQuery(chatId,text,messageId);
+            if (text.startsWith(ButtonConstants.nextPhoto) || text.startsWith(ButtonConstants.previousPhoto) || text.startsWith(ButtonConstants.video) || text.startsWith(ButtonConstants.favorite)) {
+                getNextPhoto(chatId, text, messageId);
+            }
+            if (text.startsWith("favorite")) {
+                addToFavorite(chatId, text);
+            }
         }
 
         if (photoUrl != null) {
-            savePhotoUrl(text, photoUrl, currentAd);
+            saveUrl(text, photoUrl, null, currentAd);
             userStateManager.setUserState(chatId, WAITING_FOR_CONFIRMATION);
             if (text != null) {
                 botCallback.sendPhotoWithInlKeyboard(chatId, currentAd.getDescription(), photoUrl, button.inlKeyboardConfirmation());
-
             }
+        }
+        if (videoUrl != null) {
+            log.info("Videourl for Ad: " + videoUrl);
+            saveUrl(text, null, videoUrl, currentAd);
+            userStateManager.setUserState(chatId, WAITING_FOR_CONFIRMATION);
         }
     }
 
-    private void handleCallbackQuery(Long chatId, String callbackQuery, Integer messageId) {
-        if(callbackQuery.startsWith("nextPhoto")){
-            log.info(callbackQuery);
-            String [] parts = callbackQuery.split("_");
-            Long adId = Long.parseLong(parts[1]);
-            //int currentIndex = Integer.parseInt(parts[2]);
-            Ad ad = adService.findById(adId);
-            if(ad != null){
-                List<String> imageUrls = ad.getImageUrl();
-                int nextIndex = (messageId + 1) % imageUrls.size(); // Geht zum nächsten Bild, kehrt zum ersten zurück, wenn am Ende
-                String nextImageUrl = imageUrls.get(nextIndex);
-                // Erstellen Sie neue Inline-Buttons für das nächste Bild
-                InlineKeyboardMarkup newKeyboard = button.inlKeyboardForAd(adId, nextIndex);
-                botCallback.editImageMessage(chatId, messageId, nextImageUrl,newKeyboard);
-
-            }
-        }
+    private void addToFavorite(Long chatId, String text) {
+        BotUser user = userService.findByTelegramId(chatId);
+        String[] parts = text.split("_");
+        Long adId = Long.valueOf(parts[1]);
+        adService.addFavorite(user.getId(), adId);
+        userService.save(user);
     }
 
+    private void getNextPhoto(Long chatId, String text, Integer messageId) {
 
-
-    private void getAllPhotos(Long chatId, String text) {
-        log.info("You are in getAllPhotos");
-        // Den AdID aus dem callbackData extrahieren
-        String[] dataParts = text.split("_");
-        if (!dataParts[0].equals("nextPhoto")) {
-            // Ungültige Daten empfangen
-            log.info("You are in dataParts.length != 2");
-            return;
-        }
-        Long adId = Long.parseLong(dataParts[1]);
-
-        // Die Anzeige basierend auf AdID holen
+        String[] parts = text.split("_");
+        Long adId = Long.parseLong(parts[1]);
         Ad ad = adService.findById(adId);
-        if (ad == null) {
-            // Keine Anzeige gefunden
-            log.info("You are in ad");
+        String captionText = ad.getDescription();
+        List<String> imageUrls = ad.getImageUrl();
+        String videoUrl = ad.getVideoUrl();
+        int currentIndex = photoIndexMap.getOrDefault(chatId, 0);
+        int nextIndex = (currentIndex + 1) % imageUrls.size();
+        int previousIndex = (currentIndex - 1) % imageUrls.size();
+        if (text.startsWith(ButtonConstants.nextPhoto)) {
+            if (imageUrls.size() >= 2) {
+                String nextImageUrl = imageUrls.get(nextIndex);
+                InlineKeyboardMarkup newKeyboard = button.inlKeyboardForAd(adId, nextIndex);
+                botCallback.editImageMessage(chatId, messageId, captionText, nextImageUrl, null, newKeyboard);
+                photoIndexMap.put(chatId, nextIndex);
+            }
+        } else if (text.startsWith(ButtonConstants.previousPhoto)) {
+            if (currentIndex != 0) {
+                String nextImageUrl = imageUrls.get(nextIndex);
+                InlineKeyboardMarkup newKeyboard = button.inlKeyboardForAd(adId, previousIndex);
+                botCallback.editImageMessage(chatId, messageId, captionText, nextImageUrl, null, newKeyboard);
+                photoIndexMap.put(chatId, nextIndex);
+            }
+        } else if (text.startsWith(ButtonConstants.video)) {
+            InlineKeyboardMarkup newKeyboard = button.inlKeyboardForAd(adId, nextIndex);
+            botCallback.editImageMessage(chatId, messageId, captionText, null, videoUrl, newKeyboard);
+            photoIndexMap.put(chatId, nextIndex);
+        } else if (text.startsWith(ButtonConstants.favorite)) {
+            log.info("text: " + text + "  " + ButtonConstants.favorite);
+            InlineKeyboardMarkup newKeyboard = button.inlKeyboardAddFav(adId, nextIndex);
+            botCallback.editImageMessage(chatId, messageId, captionText, null, null, newKeyboard);
 
-            return;
         }
-        // Alle Fotos der Anzeige an den Benutzer senden
-        for (String photoUrl : ad.getImageUrl()) {
-            log.info("ImgaeSize: " + ad.getImageUrl().size() + " " + ad.getId());
-
-            botCallback.sendPhotoWithInlKeyboard(chatId, "Hamma rasmlar", photoUrl, null);
-        }
-
-        // Optional: Inline-Tasten erneut senden, um dem Benutzer zu erlauben, durch mehr Fotos zu navigieren oder sie zu favorisieren
-        //botCallback.sendMessageWithInlKeyboard(chatId, "Weitere Aktionen?", button.inlKeyboardForAd());
     }
-
 
     private void getMyAds(Long chatId) {
         List<Ad> myAds = adService.findByUserId(chatId);
@@ -149,22 +145,25 @@ public class AutoInterpreter {
             userStateManager.setUserState(chatId, AUTO_AD_CANCELLED);
             botCallback.sendMessageWithInlKeyboard(chatId, "E'lon bekor qilindi", null);
         } else {
-            botCallback.sendMessageWithInlKeyboard(chatId, "E'lon tasdiqlab bo'lindi, " +
-                    "Mening e'lonlarim bo'limidan o'chirishingiz mumkin", null);
+            botCallback.sendMessageWithInlKeyboard(chatId, "E'lon tasdiqlab bo'lindi, " + "Mening e'lonlarim bo'limidan o'chirishingiz mumkin", null);
         }
 
     }
 
-    private void savePhotoUrl(String text, String photoUrl, Ad currentAd) {
+    private void saveUrl(String text, String photoUrl, String videoUrl, Ad currentAd) {
         List<String> photoUrls = currentAd.getImageUrl();
-        if (photoUrls == null) {
-            photoUrls = new ArrayList<>();
-            currentAd.setImageUrl(photoUrls);
-            currentAd.setDescription(text);
-
+        if (photoUrl != null) {
+            if (photoUrls == null) {
+                photoUrls = new ArrayList<>();
+                currentAd.setImageUrl(photoUrls);
+                currentAd.setDescription(text);
+            }
+            photoUrls.add(photoUrl);
+        } else {
+            currentAd.setVideoUrl(videoUrl);
+            log.info("VideoUrl in saveUrl " + videoUrl);
         }
-        photoUrls.add(photoUrl);
-        log.info("PhotoUrl: " + photoUrl);
+
     }
 
     private void finalizeAndSaveAd(Long chatId, Ad currentAd) {
@@ -178,7 +177,6 @@ public class AutoInterpreter {
             botCallback.sendMessageWithInlKeyboard(chatId, "Avto E'loningiz joylandi", null);
         } else {
             botCallback.sendMessageWithInlKeyboard(chatId, "Siz e'lonni bekor qilgansiz, qaytadan yuklang", null);
-
         }
 
     }
@@ -206,6 +204,8 @@ public class AutoInterpreter {
                 List<Ad> allAds = adService.findAll();
                 if (allAds != null && !allAds.isEmpty()) {
                     getAd(chatId, allAds);
+                    botCallback.sendMessageWithReplyKeyboard(chatId, "Navbatdagi e'lonlar", button.nextPage());
+
                 } else {
                     botCallback.sendMessageWithInlKeyboard(chatId, "Birorta ham e'lon topilmadi \uD83D\uDE45\u200D♂\uFE0F", null);
                 }
@@ -213,37 +213,74 @@ public class AutoInterpreter {
                 List<Ad> byStadt = adService.findByStadt(text);
                 if (byStadt != null && !byStadt.isEmpty()) {
                     getAd(chatId, byStadt);
+                    botCallback.sendMessageWithReplyKeyboard(chatId, "Navbatdagi e'lonlar", button.nextPage());
+
                 } else {
                     botCallback.sendMessageWithInlKeyboard(chatId, text + "da e'lon topilmadi \uD83D\uDE45\u200D♂\uFE0F", null);
                 }
             }
-            userStateManager.setUserState(chatId, GETTING_ADS);
+            userStateManager.setUserState(chatId, SEARCH_AD_AUTO);
 
         }
+        photoIndexMap.clear();
+
     }
 
-    private void getAd(Long chatId, List<Ad> byStadt) {
-        for (Ad ad : byStadt) {
+    Map<Long, Integer> userPageState = new HashMap<>();
+
+    private static final int PAGE_SIZE = 10;
+    private void getAd(Long chatId, List<Ad> ads) {
+        int currentIndex = userPageState.getOrDefault(chatId, ads.size());  // Starte mit der letzten Anzeige
+        int startIndex = Math.max(0, currentIndex - PAGE_SIZE);
+
+        for (int i = startIndex; i < currentIndex; i++) {
+            Ad ad = ads.get(i);
             List<String> photoUrls = ad.getImageUrl();
             if (photoUrls != null && !photoUrls.isEmpty()) {
-                botCallback.sendPhotoWithInlKeyboard(chatId, ad.getDescription(), photoUrls.get(0), button.inlKeyboardForAd(ad.getId(),null));
+                botCallback.sendPhotoWithInlKeyboard(chatId, "E'lon nomeri: " + ad.getId() + "\n " +
+                        ad.getDescription(), photoUrls.get(0), button.inlKeyboardForAd(ad.getId(), null));
             }
         }
+        userPageState.put(chatId, startIndex);
     }
+
+    public void nextPage(Long chatId) {
+        List<Ad> allAds = adService.findAll();
+        int currentIndex = userPageState.getOrDefault(chatId, allAds.size());
+        if(currentIndex > 0) {
+            getAd(chatId, allAds);
+        } else {
+            botCallback.sendMessageWithInlKeyboard(chatId,"Jo'q boshqa e'lon-pelon! \uD83D\uDE04",null);
+        }
+    }
+
+    public void previousPage(Long chatId) {
+        int currentIndex = userPageState.getOrDefault(chatId, 0) + PAGE_SIZE;
+        userPageState.put(chatId, Math.min(adService.findAll().size(), currentIndex));
+        List<Ad> allAds = adService.findAll();
+        getAd(chatId, allAds);
+    }
+
+
 
     private void autoSearch(Long chatId) {
         botCallback.sendInKeyboardForSearch(chatId);
         userStateManager.setUserState(chatId, SEARCH_AD_AUTO);
+        photoIndexMap.clear();
+
     }
 
     private void auto(Long chatId) {
         botCallback.sendAutoMenu(chatId);
         userStateManager.setUserState(chatId, AUTO);
+        photoIndexMap.clear();
     }
 
     private void back(Long chatId) {
         botCallback.menu(chatId);
         userStateManager.setUserState(chatId, START);
+        photoIndexMap.clear();
+
     }
 
 }

@@ -7,7 +7,10 @@ import car.autoSpotterBot.model.Stadt;
 import car.autoSpotterBot.repository.AdRepository;
 import car.autoSpotterBot.repository.BotUserRepository;
 import car.autoSpotterBot.repository.StadtRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -15,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class AdService {
 
     private final AdRepository adRepository;
@@ -32,7 +36,6 @@ public class AdService {
         return adRepository.findAll();
     }
 
-    // Find ad by ID
     public Ad findById(Long id) {
         return adRepository.findById(id)
                 .orElseThrow(() -> new AdNotFoundException(id));
@@ -43,15 +46,6 @@ public class AdService {
         return adRepository.save(ad);
     }
 
-    // Update an existing ad
-    public Ad updateAd(Ad ad) {
-        if (adRepository.existsById(ad.getId())) {
-            return adRepository.save(ad);
-        }
-        throw new AdNotFoundException(ad.getId());
-    }
-
-    // Delete an ad by ID
     public void deleteById(Long id) {
         if (adRepository.existsById(id)) {
             adRepository.deleteById(id);
@@ -59,29 +53,6 @@ public class AdService {
             throw new AdNotFoundException(id);
         }
     }
-    public void saveAdWithLocation(Long adId, String stadtName) {
-        // Eine Stadt aus der Datenbank anhand ihres Namens abrufen
-        Stadt stadt = stadtRepository.findByName(stadtName);
-
-        // Wenn die Stadt nicht existiert, erstellen Sie eine neue
-        if(stadt == null) {
-            stadt = new Stadt();
-            stadt.setName(stadtName);
-            stadtRepository.save(stadt);
-        }
-
-        // Die Anzeige aus der Datenbank anhand ihrer ID abrufen
-        Ad ad = adRepository.findById(adId).orElse(null);
-
-        if(ad != null) {
-            // Die Stadt als Standort für die Anzeige festlegen
-            ad.setStandort(stadt);
-
-            // Die aktualisierte Anzeige in der Datenbank speichern
-            adRepository.save(ad);
-        }
-    }
-    // Finden Sie Anzeigen basierend auf einer bestimmten Stadt
     public List<Ad> findByStadt(String stadtName) {
         Stadt stadt = stadtRepository.findByName(stadtName);
         if (stadt != null) {
@@ -96,16 +67,28 @@ public class AdService {
         }
         return new ArrayList<>();
     }
+    public void addFavorite(Long userId, Long adId) {
+        BotUser user = botUserRepository.findById(userId).orElseThrow(() -> new RuntimeException("User nicht gefunden"));
+        Ad ad = adRepository.findById(adId).orElseThrow(() -> new RuntimeException("Ad nicht gefunden"));
 
-    public Ad updateAdLocation(Long adId, String newStadtName) {
-        Ad ad = adRepository.findById(adId).orElseThrow(() -> new AdNotFoundException(adId));
-        Stadt newStadt = stadtRepository.findByName(newStadtName);
-        if (newStadt == null) {
-            newStadt = new Stadt();
-            newStadt.setName(newStadtName);
-            stadtRepository.save(newStadt);
+        if (!user.getFavoriteAds().contains(ad)) {
+            user.getFavoriteAds().add(ad);
+            botUserRepository.save(user);
         }
-        ad.setStandort(newStadt);
-        return adRepository.save(ad);
+        if (!ad.getFavoritedByUsers().contains(user)) {
+            ad.getFavoritedByUsers().add(user);
+            adRepository.save(ad);
+        }
+    }
+    public Page<Ad> findAds(Pageable pageable) {
+        return adRepository.findAll(pageable);
+    }
+
+
+    public void removeFromFavorites(Long adId, Long userId) {
+        Ad ad = adRepository.findById(adId).orElseThrow(() -> new RuntimeException("Ad not found"));
+        BotUser user = botUserRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        ad.getFavoritedByUsers().remove(user);
+        adRepository.save(ad);
     }
 }

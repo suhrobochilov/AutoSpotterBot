@@ -15,12 +15,12 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageCaption;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageMedia;
-import org.telegram.telegrambots.meta.api.objects.InputFile;
-import org.telegram.telegrambots.meta.api.objects.Message;
-import org.telegram.telegrambots.meta.api.objects.PhotoSize;
-import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
+import org.telegram.telegrambots.meta.api.objects.*;
 import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto;
+import org.telegram.telegrambots.meta.api.objects.media.InputMediaVideo;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -77,8 +77,9 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
                 mainMenu(chatId);
                 userStateManager.setUserState(chatId, START);
             } else if (text.equals(ButtonConstants.auto) || text.equals(ButtonConstants.placeAutoAd) || text.equals(ButtonConstants.autoSearch)
-                    || text.equals(ButtonConstants.backInAutoAd) || text.equals(ButtonConstants.mayAutoAds)) {
-                autoInterpreter.autoInterpret(chatId, text, null, messageId);
+                    || text.equals(ButtonConstants.backInAutoAd) || text.equals(ButtonConstants.mayAutoAds) || text.equals(ButtonConstants.nextPage) ||
+                    text.equals(ButtonConstants.previousPage)) {
+                autoInterpreter.autoInterpret(chatId, text, null, null, messageId);
             } else if (text.equals(ButtonConstants.immobile) || text.equals(ButtonConstants.foods) || text.equals(ButtonConstants.service)) {
                 sendMessageWithInlKeyboard(chatId, "Bu funksiya hali tayyor emas", null);
             }
@@ -87,7 +88,7 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
             Long chatId = update.getCallbackQuery().getFrom().getId();
             String callBackQuery = update.getCallbackQuery().getData();
             Integer messageId = update.getCallbackQuery().getMessage().getMessageId();
-            autoInterpreter.autoInterpret(chatId, callBackQuery, null, messageId);
+            autoInterpreter.autoInterpret(chatId, callBackQuery, null, null, messageId);
 
         } else if (update.getMessage().hasPhoto()) {
             List<PhotoSize> photoSizes = update.getMessage().getPhoto();
@@ -97,26 +98,68 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
             String caption = update.getMessage().getCaption();
             Integer messageId = update.getMessage().getMessageId();
             if (userStateManager.getUserState(chatId).equals(SENDING_PHOTO_FOR_AUTO) || userStateManager.getUserState(chatId).equals(WAITING_FOR_CONFIRMATION)) {
-                autoInterpreter.autoInterpret(chatId, caption, photoUrl, messageId);
+                autoInterpreter.autoInterpret(chatId, caption, photoUrl, null, messageId);
+            }
+        } else if (update.getMessage().hasVideo()) {
+            Long chatId = update.getMessage().getFrom().getId();
+            Video video = update.getMessage().getVideo();
+            String videoUrl = video.getFileId();
+            Integer messageId = update.getMessage().getMessageId();
+            if (userStateManager.getUserState(chatId).equals(SENDING_PHOTO_FOR_AUTO) || userStateManager.getUserState(chatId).equals(WAITING_FOR_CONFIRMATION)) {
+                autoInterpreter.autoInterpret(chatId, null, null, videoUrl, messageId);
             }
         }
 
     }
 
     @Override
-    public void editImageMessage(Long chatId, Integer messageId, String imageUrl,InlineKeyboardMarkup newKeyboard) {
-        InputMediaPhoto newMedia = new InputMediaPhoto(imageUrl);
-        EditMessageMedia editMessageMedia = new EditMessageMedia();
-        editMessageMedia.setChatId(chatId);
-        editMessageMedia.setMessageId(messageId);
-        editMessageMedia.setMedia(newMedia);
-        editMessageMedia.setReplyMarkup(newKeyboard);
-        try {
-            execute(editMessageMedia); // Hier rufen Sie die Methode aus, die die Nachricht bearbeitet. Stellen Sie sicher, dass Ihre Bot-Klasse dieses "execute" unterstützt.
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
+    public void editImageMessage(Long chatId, Integer messageId, String captionText, String imageUrl, String videoUrl, InlineKeyboardMarkup newKeyboard) {
+        if (imageUrl != null || videoUrl != null) {
+            EditMessageMedia editMessageMedia = new EditMessageMedia();
+
+            if (imageUrl != null) {
+                InputMediaPhoto photoMedia = new InputMediaPhoto(imageUrl);
+                photoMedia.setCaption(captionText);
+                editMessageMedia.setMedia(photoMedia);
+            } else {
+                InputMediaVideo videoMedia = new InputMediaVideo(videoUrl);
+                videoMedia.setCaption(captionText);
+                editMessageMedia.setMedia(videoMedia);
+            }
+
+            editMessageMedia.setChatId(chatId);
+            editMessageMedia.setMessageId(messageId);
+            editMessageMedia.setReplyMarkup(newKeyboard);
+
+            try {
+                execute(editMessageMedia);
+            } catch (TelegramApiException e) {
+                if (e.getMessage().contains("message is not modified")) {
+                    throw new RuntimeException("Versuch, eine Nachricht ohne tatsächliche Änderungen zu aktualisieren.");
+                } else {
+                    e.printStackTrace();
+                }
+            }
+
+        } else {
+            EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
+            editMessageReplyMarkup.setReplyMarkup(newKeyboard);
+            editMessageReplyMarkup.setChatId(chatId);
+            editMessageReplyMarkup.setMessageId(messageId);
+
+            try {
+                execute(editMessageReplyMarkup);
+            } catch (TelegramApiException e) {
+                if (e.getMessage().contains("message is not modified")) {
+                    throw new RuntimeException("Versuch, eine Nachricht ohne tatsächliche Änderungen zu aktualisieren.");
+                } else {
+                    e.printStackTrace();
+                }
+            }
+
         }
     }
+
 
     @Override
     public void mainMenu(long chatId) {

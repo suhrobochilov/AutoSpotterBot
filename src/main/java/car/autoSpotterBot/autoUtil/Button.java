@@ -1,10 +1,6 @@
 package car.autoSpotterBot.autoUtil;
 
-import car.autoSpotterBot.MyBot;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
@@ -18,7 +14,6 @@ import java.util.List;
 
 @Component
 @Service
-@Controller
 public class Button {
     public InlineKeyboardMarkup buildInlKeyboardForCities(long userId, List<String> buttons1, List<String> buttons2,
                                                           List<String> buttons3, List<String> buttons4, List<String> buttons5) {
@@ -109,19 +104,52 @@ public class Button {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         List<InlineKeyboardButton> row1 = new ArrayList<>();
         List<InlineKeyboardButton> row2 = new ArrayList<>();
-        InlineKeyboardButton favoriteBtn = new InlineKeyboardButton();
         InlineKeyboardButton next = new InlineKeyboardButton();
         InlineKeyboardButton previous = new InlineKeyboardButton();
+        InlineKeyboardButton favorite = new InlineKeyboardButton();
+        InlineKeyboardButton video = new InlineKeyboardButton();
         next.setText("Keyingi rasm ▶\uFE0F");
-        next.setCallbackData("nextPhoto_"+adID);
+        next.setCallbackData(ButtonConstants.nextPhoto + adID + "_" + nextIndex);
         previous.setText("◀\uFE0F Oldingi rasm");
-        previous.setCallbackData("previousPhoto_"+adID+"_"+nextIndex);
-        favoriteBtn.setText("Favoritga qo'shish");
-        favoriteBtn.setCallbackData("favorite_" + adID+"_"+nextIndex);
+        previous.setCallbackData(ButtonConstants.previousPhoto + adID + "_" + nextIndex);
+        video.setText("Video \uD83D\uDCF9");
+        video.setCallbackData(ButtonConstants.video + adID);
+        favorite.setText("Favoritga qo'shish");
+        favorite.setCallbackData(ButtonConstants.favorite + adID);
 
         row1.add(previous);
         row1.add(next);
-        row2.add(favoriteBtn);
+        row2.add(video);
+        row2.add(favorite);
+        rows.add(row1);
+        rows.add(row2);
+
+        inlineKeyboardMarkup.setKeyboard(rows);
+        return inlineKeyboardMarkup;
+    }
+
+    public InlineKeyboardMarkup inlKeyboardAddFav(Long adID, Integer nextIndex) {
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        List<InlineKeyboardButton> row1 = new ArrayList<>();
+        List<InlineKeyboardButton> row2 = new ArrayList<>();
+        InlineKeyboardButton next = new InlineKeyboardButton();
+        InlineKeyboardButton previous = new InlineKeyboardButton();
+        InlineKeyboardButton favorite = new InlineKeyboardButton();
+        InlineKeyboardButton video = new InlineKeyboardButton();
+        next.setText("Keyingi rasm ▶\uFE0F");
+        next.setCallbackData(ButtonConstants.nextPhoto + adID + "_" + nextIndex);
+        previous.setText("◀\uFE0F Oldingi rasm");
+        previous.setCallbackData(ButtonConstants.previousPhoto + adID + "_" + nextIndex);
+        video.setText("Video \uD83D\uDCF9");
+        video.setCallbackData(ButtonConstants.video + adID);
+        favorite.setText("Favoritga qo'shildi ☑\uFE0F");
+        favorite.setCallbackData(ButtonConstants.favorite + adID);
+
+        row1.add(previous);
+        row1.add(next);
+        row2.add(video);
+        row2.add(favorite);
         rows.add(row1);
         rows.add(row2);
 
@@ -148,6 +176,21 @@ public class Button {
         keyboard.add(row2);
         keyboard.add(row3);
 
+        replyKeyboardMarkup.setKeyboard(keyboard);
+        return replyKeyboardMarkup;
+    }
+
+    public ReplyKeyboardMarkup nextPage() {
+        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        List<KeyboardRow> keyboard = new ArrayList<>();
+        replyKeyboardMarkup.setResizeKeyboard(true);
+        KeyboardRow row1 = new KeyboardRow();
+        KeyboardRow row2 = new KeyboardRow();
+        row1.add(new KeyboardButton("Oldingisi"));
+        row1.add(new KeyboardButton("Keyingisi"));
+        row2.add(new KeyboardButton("Ortga ⬅\uFE0F"));
+        keyboard.add(row1);
+        keyboard.add(row2);
         replyKeyboardMarkup.setKeyboard(keyboard);
         return replyKeyboardMarkup;
     }
