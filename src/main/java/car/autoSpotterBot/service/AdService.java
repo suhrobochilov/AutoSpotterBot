@@ -8,6 +8,8 @@ import car.autoSpotterBot.repository.AdRepository;
 import car.autoSpotterBot.repository.BotUserRepository;
 import car.autoSpotterBot.repository.StadtRepository;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,12 +22,14 @@ import java.util.Optional;
 @Service
 @Transactional
 public class AdService {
+    private static final Logger log = LoggerFactory.getLogger(AdService.class);
 
     private final AdRepository adRepository;
     @Autowired
     private StadtRepository stadtRepository;
     @Autowired
     private BotUserRepository botUserRepository;
+
     @Autowired
     public AdService(AdRepository adRepository) {
         this.adRepository = adRepository;
@@ -46,13 +50,6 @@ public class AdService {
         return adRepository.save(ad);
     }
 
-    public void deleteById(Long id) {
-        if (adRepository.existsById(id)) {
-            adRepository.deleteById(id);
-        } else {
-            throw new AdNotFoundException(id);
-        }
-    }
     public List<Ad> findByStadt(String stadtName) {
         Stadt stadt = stadtRepository.findByName(stadtName);
         if (stadt != null) {
@@ -60,13 +57,15 @@ public class AdService {
         }
         return new ArrayList<>();
     }
+
     public List<Ad> findByUserId(Long userId) {
         BotUser user = botUserRepository.findByTelegramId(userId);
-        if (user != null){
+        if (user != null) {
             return adRepository.findByUserId(user.getId());
         }
         return new ArrayList<>();
     }
+
     public void addFavorite(Long userId, Long adId) {
         BotUser user = botUserRepository.findById(userId).orElseThrow(() -> new RuntimeException("User nicht gefunden"));
         Ad ad = adRepository.findById(adId).orElseThrow(() -> new RuntimeException("Ad nicht gefunden"));
@@ -80,6 +79,7 @@ public class AdService {
             adRepository.save(ad);
         }
     }
+
     public Page<Ad> findAds(Pageable pageable) {
         return adRepository.findAll(pageable);
     }
@@ -90,5 +90,35 @@ public class AdService {
         BotUser user = botUserRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         ad.getFavoritedByUsers().remove(user);
         adRepository.save(ad);
+    }
+
+    public List<Ad> getFavoritesByUserId(Long chatId) {
+        BotUser user = botUserRepository.findByTelegramId(chatId);
+        if (user != null) {
+            return new ArrayList<>(user.getFavoriteAds());
+        } else {
+            throw new RuntimeException("User nicht gefunden");
+        }
+    }
+
+    public boolean deleteAdByUserIdAndAdId(Long chatId) {
+        Long adId = 1L;
+        BotUser user = botUserRepository.findByTelegramId(chatId);
+        if (user == null) {
+            throw new RuntimeException("User nicht gefunden");
+        }
+        Optional<Ad> ad = adRepository.findByIdAndUserId(adId, user.getId());
+        log.info("UserId: " + user.getId() + " adId: " + ad.get().getId());
+        adRepository.deleteById(ad.get().getId());
+        return true;
+    }
+
+
+    public void deleteById(Long id) {
+        if (adRepository.existsById(id)) {
+            adRepository.deleteById(id);
+        } else {
+            throw new AdNotFoundException(id);
+        }
     }
 }

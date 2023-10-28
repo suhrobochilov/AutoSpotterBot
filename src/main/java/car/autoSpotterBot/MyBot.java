@@ -1,6 +1,8 @@
 
 package car.autoSpotterBot;
 
+import car.autoSpotterBot.button.Button;
+import car.autoSpotterBot.button.ButtonConstants;
 import car.autoSpotterBot.configuration.BotConfig;
 import car.autoSpotterBot.model.Ad;
 import car.autoSpotterBot.model.BotUser;
@@ -15,7 +17,6 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
-import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageCaption;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageMedia;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.objects.*;
@@ -72,16 +73,17 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
                 newUser.setUsername(userName);
                 userService.save(newUser);
             }
-            if (text.equals("/start")) {
+            switch (text) {
 
-                mainMenu(chatId);
-                userStateManager.setUserState(chatId, START);
-            } else if (text.equals(ButtonConstants.auto) || text.equals(ButtonConstants.placeAutoAd) || text.equals(ButtonConstants.autoSearch)
-                    || text.equals(ButtonConstants.backInAutoAd) || text.equals(ButtonConstants.mayAutoAds) || text.equals(ButtonConstants.nextPage) ||
-                    text.equals(ButtonConstants.previousPage)) {
-                autoInterpreter.autoInterpret(chatId, text, null, null, messageId);
-            } else if (text.equals(ButtonConstants.immobile) || text.equals(ButtonConstants.foods) || text.equals(ButtonConstants.service)) {
-                sendMessageWithInlKeyboard(chatId, "Bu funksiya hali tayyor emas", null);
+                case "/start" -> {
+                    mainMenu(chatId);
+                    userStateManager.setUserState(chatId, START);
+                }
+                case ButtonConstants.auto, ButtonConstants.placeAutoAd, ButtonConstants.autoSearch, ButtonConstants.backInAutoAd, ButtonConstants.mayAutoAds,
+                        ButtonConstants.nextPage, ButtonConstants.previousPage, ButtonConstants.autoFavorite ->
+                        autoInterpreter.autoInterpret(chatId, text, null, null, messageId);
+                case ButtonConstants.immobile, ButtonConstants.foods, ButtonConstants.service ->
+                        sendMessageWithInlKeyboard(chatId, "Bu funksiya hali tayyor emas", null);
             }
 
         } else if (update.hasCallbackQuery()) {

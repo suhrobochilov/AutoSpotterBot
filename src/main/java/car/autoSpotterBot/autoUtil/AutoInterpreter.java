@@ -1,6 +1,8 @@
 package car.autoSpotterBot.autoUtil;
 
 import car.autoSpotterBot.MyBot;
+import car.autoSpotterBot.button.Button;
+import car.autoSpotterBot.button.ButtonConstants;
 import car.autoSpotterBot.model.Ad;
 import car.autoSpotterBot.model.BotUser;
 import car.autoSpotterBot.model.Stadt;
@@ -9,20 +11,23 @@ import car.autoSpotterBot.service.BotUserService;
 import car.autoSpotterBot.service.StadtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static car.autoSpotterBot.autoUtil.UserStateInAuto.*;
 
 @Component
+@Service
 public class AutoInterpreter {
     private static final Logger log = LoggerFactory.getLogger(MyBot.class);
+    private static final int PAGE_SIZE = 10;
     private final BotUserService userService;
     private final Button button;
     private final StadtService stadtService;
@@ -30,7 +35,8 @@ public class AutoInterpreter {
     private final BotCallback botCallback;
     private final Map<Long, Ad> currentAdsMap = new ConcurrentHashMap<>();
     private final UserStateManager userStateManager;
-    private Map<Long, Integer> photoIndexMap = new HashMap<>();
+    private final Map<Long, Integer> photoIndexMap = new HashMap<>();
+    Map<Long, Integer> userPageState = new HashMap<>();
 
     public AutoInterpreter(BotCallback botCallback, BotUserService userService, Button buttonService, StadtService stadtService, AdService adService, UserStateManager userStateManager) {
         this.userService = userService;
@@ -51,6 +57,8 @@ public class AutoInterpreter {
                         validateUserState(chatId, text, currentAd);
                 case "Tasdiqlash" -> finalizeAndSaveAd(chatId, currentAd);
                 case "Bekor qilish" -> cancelAutoAd(chatId);
+                case ButtonConstants.deleteAd -> deleteMyAutoAd(chatId);
+                case ButtonConstants.autoFavorite -> getMyFavorite(chatId);
                 case ButtonConstants.nextPage -> nextPage(chatId);
                 case ButtonConstants.previousPage -> previousPage(chatId);
                 case ButtonConstants.auto -> auto(chatId);
@@ -78,6 +86,41 @@ public class AutoInterpreter {
             log.info("Videourl for Ad: " + videoUrl);
             saveUrl(text, null, videoUrl, currentAd);
             userStateManager.setUserState(chatId, WAITING_FOR_CONFIRMATION);
+        }
+    }
+
+    private void getMyFavorite(Long chatId) {
+        List<Ad> favoriteAds = adService.getFavoritesByUserId(chatId);
+        if (favoriteAds.isEmpty()) {
+            botCallback.sendMessageWithInlKeyboard(chatId, "Sie haben keine favorisierten Anzeigen", null);
+            return;
+        }
+        for (Ad ad : favoriteAds) {
+            List<String> imageUrl = ad.getImageUrl();
+            botCallback.sendPhotoWithInlKeyboard(chatId, "E'lon nomeri: " + ad.getId() + "\n " +
+                    ad.getDescription(), imageUrl.get(0), null);
+        }
+    }
+
+
+    private void deleteMyAutoAd(Long chatId) {
+        boolean deleted = adService.deleteAdByUserIdAndAdId(chatId);
+        if (deleted) {
+            botCallback.sendMessageWithInlKeyboard(chatId, "Ihre Anzeigen wurden gelöscht.", null);
+        } else {
+            botCallback.sendMessageWithInlKeyboard(chatId, "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.", null);
+        }
+    }
+
+    private void editMyAd(Long chatId) {
+        List<Ad> userAds = adService.findByUserId(chatId);
+        if (userAds.isEmpty()) {
+            botCallback.sendMessageWithInlKeyboard(chatId, "Sie haben keine Anzeigen zum Bearbeiten.", null);
+            return;
+        }
+        for (Ad ad : userAds) {
+            List<String> imageUrl = ad.getImageUrl();
+            botCallback.sendPhotoWithInlKeyboard(chatId, ad.getDescription(), imageUrl.get(0), button.inlKeyboardForMyAds());
         }
     }
 
@@ -128,15 +171,15 @@ public class AutoInterpreter {
 
     private void getMyAds(Long chatId) {
         List<Ad> myAds = adService.findByUserId(chatId);
-        for (Ad ad : myAds) {
-            List<String> photoUrls = ad.getImageUrl();
-            if (photoUrls != null && !photoUrls.isEmpty()) {
+        if (!myAds.isEmpty()) {
+            for (Ad ad : myAds) {
+                List<String> photoUrls = ad.getImageUrl();
                 botCallback.sendPhotoWithInlKeyboard(chatId, ad.getDescription(), photoUrls.get(0), button.inlKeyboardForMyAds());
-            } else {
-                botCallback.sendMessageWithInlKeyboard(chatId, "Sizda e'lon yo'q", null);
-                return;
             }
+        } else {
+            botCallback.sendMessageWithInlKeyboard(chatId, "Sizda e'lon-pelon jo'qku \uD83D\uDE04", null);
         }
+
     }
 
     private void cancelAutoAd(Long chatId) {
@@ -202,6 +245,7 @@ public class AutoInterpreter {
             if (text.equals("Hammasini ko'rsatish")) {
 
                 List<Ad> allAds = adService.findAll();
+                log.info("All ads: " + allAds.size());
                 if (allAds != null && !allAds.isEmpty()) {
                     getAd(chatId, allAds);
                     botCallback.sendMessageWithReplyKeyboard(chatId, "Navbatdagi e'lonlar", button.nextPage());
@@ -226,13 +270,11 @@ public class AutoInterpreter {
 
     }
 
-    Map<Long, Integer> userPageState = new HashMap<>();
-
-    private static final int PAGE_SIZE = 10;
     private void getAd(Long chatId, List<Ad> ads) {
+
         int currentIndex = userPageState.getOrDefault(chatId, ads.size());  // Starte mit der letzten Anzeige
         int startIndex = Math.max(0, currentIndex - PAGE_SIZE);
-
+        log.info("currentIndex: " + currentIndex + " startIndex: " + startIndex);
         for (int i = startIndex; i < currentIndex; i++) {
             Ad ad = ads.get(i);
             List<String> photoUrls = ad.getImageUrl();
@@ -247,10 +289,10 @@ public class AutoInterpreter {
     public void nextPage(Long chatId) {
         List<Ad> allAds = adService.findAll();
         int currentIndex = userPageState.getOrDefault(chatId, allAds.size());
-        if(currentIndex > 0) {
+        if (currentIndex > 0) {
             getAd(chatId, allAds);
         } else {
-            botCallback.sendMessageWithInlKeyboard(chatId,"Jo'q boshqa e'lon-pelon! \uD83D\uDE04",null);
+            botCallback.sendMessageWithInlKeyboard(chatId, "Jo'q boshqa e'lon-pelon! \uD83D\uDE04", null);
         }
     }
 
@@ -260,7 +302,6 @@ public class AutoInterpreter {
         List<Ad> allAds = adService.findAll();
         getAd(chatId, allAds);
     }
-
 
 
     private void autoSearch(Long chatId) {

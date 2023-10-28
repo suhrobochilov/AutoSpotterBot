@@ -1,12 +1,11 @@
 package car.autoSpotterBot;
 
-import car.autoSpotterBot.autoUtil.UserStateInAuto;
 import car.autoSpotterBot.autoUtil.UserStateManager;
 import car.autoSpotterBot.configuration.BotConfig;
 import car.autoSpotterBot.service.AdService;
 import car.autoSpotterBot.service.BotUserService;
 import car.autoSpotterBot.service.StadtService;
-import car.autoSpotterBot.autoUtil.Button;
+import car.autoSpotterBot.button.Button;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;

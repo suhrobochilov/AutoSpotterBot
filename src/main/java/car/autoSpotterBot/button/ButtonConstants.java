@@ -1,4 +1,4 @@
-package car.autoSpotterBot.autoUtil;
+package car.autoSpotterBot.button;
 
 public class ButtonConstants {
     public static final String auto = "Avtotransport";
@@ -16,4 +16,8 @@ public class ButtonConstants {
     public static final String nextPhoto = "nextPhoto_";
     public static final String nextPage = "Keyingisi";
     public static final String previousPage = "Oldingisi";
+    public static final String editText = "editText";
+    public static final String editPhoto = "editPhoto";
+    public static final String deleteAd = "deleteAd";
+    public static final String editVideo = "editVideo";
 }

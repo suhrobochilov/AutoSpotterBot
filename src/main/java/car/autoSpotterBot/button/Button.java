@@ -1,4 +1,4 @@
-package car.autoSpotterBot.autoUtil;
+package car.autoSpotterBot.button;
 
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
@@ -82,18 +82,27 @@ public class Button {
     public InlineKeyboardMarkup inlKeyboardForMyAds() {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-        List<InlineKeyboardButton> row = new ArrayList<>();
+        List<InlineKeyboardButton> row1 = new ArrayList<>();
+        List<InlineKeyboardButton> row2 = new ArrayList<>();
+        InlineKeyboardButton deleteAd = new InlineKeyboardButton();
+        InlineKeyboardButton editText = new InlineKeyboardButton();
+        InlineKeyboardButton editPhoto = new InlineKeyboardButton();
+        InlineKeyboardButton editVideo = new InlineKeyboardButton();
+        deleteAd.setText("E'lonni o'chirish \uD83D\uDD34");
+        deleteAd.setCallbackData(ButtonConstants.deleteAd);
+        editText.setText("Matnni o'zgartirish \uD83D\uDCDD");
+        editText.setCallbackData(ButtonConstants.editText);
+        editPhoto.setText("Rasmni o'zgartirish \uD83D\uDCF8");
+        editPhoto.setCallbackData(ButtonConstants.editPhoto);
+        editVideo.setText("Videoni o'zgartirish \uD83D\uDCF9");
+        editVideo.setCallbackData(ButtonConstants.editVideo);
 
-        InlineKeyboardButton morePhotosBtn = new InlineKeyboardButton();
-        InlineKeyboardButton favoriteBtn = new InlineKeyboardButton();
-        morePhotosBtn.setText("O'chirish");
-        morePhotosBtn.setCallbackData("delete");
-        favoriteBtn.setText("Qayta ishlash");
-        favoriteBtn.setCallbackData("edit");
-
-        row.add(morePhotosBtn);
-        row.add(favoriteBtn);
-        rows.add(row);
+        row1.add(deleteAd);
+        row1.add(editText);
+        row2.add(editVideo);
+        row2.add(editPhoto);
+        rows.add(row1);
+        rows.add(row2);
 
         inlineKeyboardMarkup.setKeyboard(rows);
         return inlineKeyboardMarkup;
@@ -195,20 +204,6 @@ public class Button {
         return replyKeyboardMarkup;
     }
 
-
-    public ReplyKeyboardMarkup bundeslanderMenu(List<String> bundeslander) {
-        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
-        List<KeyboardRow> keyboard = new ArrayList<>();
-
-        for (String bundesland : bundeslander) {
-            KeyboardRow row = new KeyboardRow();
-            row.add(new KeyboardButton(bundesland));
-            keyboard.add(row);
-        }
-        replyKeyboardMarkup.setKeyboard(keyboard);
-        return replyKeyboardMarkup;
-    }
-
     public InlineKeyboardMarkup buildInlKeyboardForSearch(Long chatId, List<String> citiesRow1, List<String> citiesRow2, List<String> citiesRow3,
                                                           List<String> citiesRow4, List<String> citiesRow5, List<String> allAutoAd) {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
@@ -235,5 +230,7 @@ public class Button {
 
         return Arrays.asList(bundeslanderRow1, bundeslanderRow2, bundeslanderRow3, bundeslanderRow4, bundeslanderRow5);
     }
+
+
 
 }

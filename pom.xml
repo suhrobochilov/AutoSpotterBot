@@ -67,6 +67,20 @@
 			<artifactId>json</artifactId>
 			<version>20230618</version>
 		</dependency>
+		<!-- Log4j Abhängigkeit -->
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.17</version>
+		</dependency>
+
+		<!-- SLF4J-Brücke, um Hibernate-Logging über Log4j zu routen -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>1.7.30</version>
+		</dependency>
+
 
 	</dependencies>
 
