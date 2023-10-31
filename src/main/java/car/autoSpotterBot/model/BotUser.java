@@ -1,5 +1,8 @@
 package car.autoSpotterBot.model;
 
+import car.autoSpotterBot.model.transport.AgroTechnology;
+import car.autoSpotterBot.model.transport.Automobile;
+import car.autoSpotterBot.model.transport.Favorit;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -18,23 +21,11 @@ public class BotUser {
     private boolean isAdmin;
 
     @OneToMany(mappedBy = "user")
-    private List<Ad> ads;
+    private List<Automobile> automobiles;
 
-    @ManyToMany
-    @JoinTable(
-            name = "user_favorites",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "ad_id")
-    )
-    private List<Ad> favoriteAds;
+    @OneToMany(mappedBy = "user")
+    private List<Favorit> favoriten;
 
-    @ManyToMany
-    @JoinTable(
-            name = "user_notifications",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "stadt_id")
-    )
-    private List<Stadt> notificationCities;
 
     public String getFirstName() {
         return firstName;
@@ -84,28 +75,28 @@ public class BotUser {
         isAdmin = admin;
     }
 
-    public List<Ad> getAds() {
-        return ads;
+    public List<Automobile> getAds() {
+        return automobiles;
     }
 
-    public void setAds(List<Ad> ads) {
-        this.ads = ads;
+    public void setAds(List<Automobile> automobiles) {
+        this.automobiles = automobiles;
     }
 
-    public List<Ad> getFavoriteAds() {
-        return favoriteAds;
+    public List<Automobile> getAutomobiles() {
+        return automobiles;
     }
 
-    public void setFavoriteAds(List<Ad> favoriteAds) {
-        this.favoriteAds = favoriteAds;
+    public void setAutomobiles(List<Automobile> automobiles) {
+        this.automobiles = automobiles;
     }
 
-    public List<Stadt> getNotificationCities() {
-        return notificationCities;
+    public List<Favorit> getFavoriten() {
+        return favoriten;
     }
 
-    public void setNotificationCities(List<Stadt> notificationCities) {
-        this.notificationCities = notificationCities;
+    public void setFavoriten(List<Favorit> favoriten) {
+        this.favoriten = favoriten;
     }
 }
 

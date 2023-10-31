@@ -1,13 +1,11 @@
 package car.autoSpotterBot.button;
 
-public class ButtonConstants {
-    public static final String auto = "Avtotransport";
+public class TransButtonConstant {
+    public static final String transport = "Transport";
     public static final String autoSearch = "Qidirish \uD83D\uDD0E";
     public static final String autoFavorite = "Favorit ❤\uFE0F";
-    public static final String immobile = "Uy-joy";
     public static final String foods = "Foods";
-    public static final String service = "Maishiy xizmat";
-    public static final String placeAutoAd = "Avto-E'lon joylash \uD83D\uDE99";
+    public static final String placeAutoAd = "E'lon berish \uD83D\uDE99";
     public static final String mayAutoAds = "Mening Avto e'lonlarim \uD83D\uDCB5\uD83D\uDE98";
     public static final String backInAutoAd = "Ortga ⬅\uFE0F";
     public static final String previousPhoto = "previousPhoto_";
@@ -20,4 +18,12 @@ public class ButtonConstants {
     public static final String editPhoto = "editPhoto";
     public static final String deleteAd = "deleteAd";
     public static final String editVideo = "editVideo";
+    public static final String automobile = "Yengil avtomashinalar";
+    public static final String truck = "Yuk mashinalari";
+    public static final String agroTech = "Q.X. texnikalari";
+    public static final String otherTrans = "Boshqa texnikalar";
+    public static final  String spareParts = "Ehtiyot qismlar";
+
+
+    public static final String mainMenu = "Asosiy menu";
 }

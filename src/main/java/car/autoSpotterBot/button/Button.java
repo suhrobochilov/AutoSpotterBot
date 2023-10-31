@@ -46,11 +46,11 @@ public class Button {
         KeyboardRow row1 = new KeyboardRow();
         KeyboardRow row2 = new KeyboardRow();
 
-        row1.add(new KeyboardButton("Avtotransport"));
-        row1.add(new KeyboardButton("Uy-joy"));
+        row1.add(new KeyboardButton(MainButtonConstants.transport));
+        row1.add(new KeyboardButton(MainButtonConstants.realEstate));
 
-        row2.add(new KeyboardButton("Foods"));
-        row2.add(new KeyboardButton("Maishiy xizmat"));
+        row2.add(new KeyboardButton(MainButtonConstants.electronics));
+        row2.add(new KeyboardButton(MainButtonConstants.service));
 
         keyboard.add(row1);
         keyboard.add(row2);
@@ -78,6 +78,25 @@ public class Button {
         inlineKeyboardMarkup.setKeyboard(rows);
         return inlineKeyboardMarkup;
     }
+    public InlineKeyboardMarkup inlKeyboardSection() {
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        List<InlineKeyboardButton> row = new ArrayList<>();
+
+        InlineKeyboardButton placeAutoAd = new InlineKeyboardButton();
+        InlineKeyboardButton search = new InlineKeyboardButton();
+        placeAutoAd.setText(TransButtonConstant.placeAutoAd);
+        placeAutoAd.setCallbackData(TransButtonConstant.placeAutoAd);
+        search.setText(TransButtonConstant.autoSearch);
+        search.setCallbackData(TransButtonConstant.autoSearch);
+
+        row.add(placeAutoAd);
+        row.add(search);
+        rows.add(row);
+
+        inlineKeyboardMarkup.setKeyboard(rows);
+        return inlineKeyboardMarkup;
+    }
 
     public InlineKeyboardMarkup inlKeyboardForMyAds() {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
@@ -89,13 +108,13 @@ public class Button {
         InlineKeyboardButton editPhoto = new InlineKeyboardButton();
         InlineKeyboardButton editVideo = new InlineKeyboardButton();
         deleteAd.setText("E'lonni o'chirish \uD83D\uDD34");
-        deleteAd.setCallbackData(ButtonConstants.deleteAd);
+        deleteAd.setCallbackData(TransButtonConstant.deleteAd);
         editText.setText("Matnni o'zgartirish \uD83D\uDCDD");
-        editText.setCallbackData(ButtonConstants.editText);
+        editText.setCallbackData(TransButtonConstant.editText);
         editPhoto.setText("Rasmni o'zgartirish \uD83D\uDCF8");
-        editPhoto.setCallbackData(ButtonConstants.editPhoto);
+        editPhoto.setCallbackData(TransButtonConstant.editPhoto);
         editVideo.setText("Videoni o'zgartirish \uD83D\uDCF9");
-        editVideo.setCallbackData(ButtonConstants.editVideo);
+        editVideo.setCallbackData(TransButtonConstant.editVideo);
 
         row1.add(deleteAd);
         row1.add(editText);
@@ -118,13 +137,13 @@ public class Button {
         InlineKeyboardButton favorite = new InlineKeyboardButton();
         InlineKeyboardButton video = new InlineKeyboardButton();
         next.setText("Keyingi rasm ▶\uFE0F");
-        next.setCallbackData(ButtonConstants.nextPhoto + adID + "_" + nextIndex);
+        next.setCallbackData(TransButtonConstant.nextPhoto + adID + "_" + nextIndex);
         previous.setText("◀\uFE0F Oldingi rasm");
-        previous.setCallbackData(ButtonConstants.previousPhoto + adID + "_" + nextIndex);
+        previous.setCallbackData(TransButtonConstant.previousPhoto + adID + "_" + nextIndex);
         video.setText("Video \uD83D\uDCF9");
-        video.setCallbackData(ButtonConstants.video + adID);
+        video.setCallbackData(TransButtonConstant.video + adID);
         favorite.setText("Favoritga qo'shish");
-        favorite.setCallbackData(ButtonConstants.favorite + adID);
+        favorite.setCallbackData(TransButtonConstant.favorite + adID);
 
         row1.add(previous);
         row1.add(next);
@@ -147,13 +166,13 @@ public class Button {
         InlineKeyboardButton favorite = new InlineKeyboardButton();
         InlineKeyboardButton video = new InlineKeyboardButton();
         next.setText("Keyingi rasm ▶\uFE0F");
-        next.setCallbackData(ButtonConstants.nextPhoto + adID + "_" + nextIndex);
+        next.setCallbackData(TransButtonConstant.nextPhoto + adID + "_" + nextIndex);
         previous.setText("◀\uFE0F Oldingi rasm");
-        previous.setCallbackData(ButtonConstants.previousPhoto + adID + "_" + nextIndex);
+        previous.setCallbackData(TransButtonConstant.previousPhoto + adID + "_" + nextIndex);
         video.setText("Video \uD83D\uDCF9");
-        video.setCallbackData(ButtonConstants.video + adID);
+        video.setCallbackData(TransButtonConstant.video + adID);
         favorite.setText("Favoritga qo'shildi ☑\uFE0F");
-        favorite.setCallbackData(ButtonConstants.favorite + adID);
+        favorite.setCallbackData(TransButtonConstant.favorite + adID);
 
         row1.add(previous);
         row1.add(next);
@@ -174,13 +193,13 @@ public class Button {
         KeyboardRow row2 = new KeyboardRow();
         KeyboardRow row3 = new KeyboardRow();
 
-        row1.add(new KeyboardButton("Avto-E'lon joylash \uD83D\uDE99"));
-        row1.add(new KeyboardButton("Mening Avto e'lonlarim \uD83D\uDCB5\uD83D\uDE98"));
+        row1.add(new KeyboardButton(TransButtonConstant.automobile));
+        row1.add(new KeyboardButton(TransButtonConstant.truck));
 
-        row2.add(new KeyboardButton("Qidirish \uD83D\uDD0E"));
-        row2.add(new KeyboardButton("Favorit ❤\uFE0F"));
-        row3.add(new KeyboardButton("Ortga ⬅\uFE0F"));
-
+        row2.add(new KeyboardButton(TransButtonConstant.agroTech));
+        row2.add(new KeyboardButton(TransButtonConstant.otherTrans));
+        row3.add(new KeyboardButton(TransButtonConstant.spareParts));
+        row3.add(new KeyboardButton(TransButtonConstant.mainMenu));
         keyboard.add(row1);
         keyboard.add(row2);
         keyboard.add(row3);

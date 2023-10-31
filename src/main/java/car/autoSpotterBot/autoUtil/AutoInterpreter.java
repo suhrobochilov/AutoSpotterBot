@@ -2,26 +2,27 @@ package car.autoSpotterBot.autoUtil;
 
 import car.autoSpotterBot.MyBot;
 import car.autoSpotterBot.button.Button;
-import car.autoSpotterBot.button.ButtonConstants;
-import car.autoSpotterBot.model.Ad;
+import car.autoSpotterBot.button.TransButtonConstant;
 import car.autoSpotterBot.model.BotUser;
-import car.autoSpotterBot.model.Stadt;
-import car.autoSpotterBot.service.AdService;
+import car.autoSpotterBot.model.Standort;
+import car.autoSpotterBot.model.transport.*;
 import car.autoSpotterBot.service.BotUserService;
-import car.autoSpotterBot.service.StadtService;
+import car.autoSpotterBot.service.StandortService;
+import car.autoSpotterBot.service.transport.AutomobileService;
+import car.autoSpotterBot.state.UserStateManager;
+import car.autoSpotterBot.state.UserStateTrans;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
+import org.telegram.telegrambots.meta.api.objects.PhotoSize;
+import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.Video;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static car.autoSpotterBot.autoUtil.UserStateInAuto.*;
+import static car.autoSpotterBot.state.UserStateInAuto.*;
 
 @Component
 public class AutoInterpreter {
@@ -29,81 +30,151 @@ public class AutoInterpreter {
     private static final int PAGE_SIZE = 10;
     private final BotUserService userService;
     private final Button button;
-    private final StadtService stadtService;
-    private final AdService adService;
+    private final StandortService standortService;
+    private final AutomobileService automobileService;
     private final BotCallback botCallback;
-    private final Map<Long, Ad> currentAdsMap = new ConcurrentHashMap<>();
-    private final UserStateManager userStateManager;
+    private final Map<Long, Automobile> currentAdAuto = new ConcurrentHashMap<>();
+    private final Map<Long, Truck> currentAdTruck = new ConcurrentHashMap<>();
+    private final Map<Long, OtherTransport> currentAdOtherTrans = new ConcurrentHashMap<>();
+    private final Map<Long, AgroTechnology> currentAdAgroTech = new ConcurrentHashMap<>();
+    private final Map<Long, SpareParts> currentAdSpareParts = new ConcurrentHashMap<>();
+
+    private final UserStateManager userState;
+    private final UserStateTrans userStateTrans;
     private final Map<Long, Integer> photoIndexMap = new HashMap<>();
     Map<Long, Integer> userPageState = new HashMap<>();
 
-    public AutoInterpreter(BotCallback botCallback, BotUserService userService, Button buttonService, StadtService stadtService, AdService adService, UserStateManager userStateManager) {
+    public AutoInterpreter(BotCallback botCallback, BotUserService userService, Button buttonService, StandortService standortService, AutomobileService automobileService, UserStateManager userStateManager, UserStateTrans userStateTrans) {
         this.userService = userService;
         this.button = buttonService;
-        this.stadtService = stadtService;
-        this.adService = adService;
+        this.standortService = standortService;
+        this.automobileService = automobileService;
         this.botCallback = botCallback;
-        this.userStateManager = userStateManager;
+        this.userState = userStateManager;
+        this.userStateTrans = userStateTrans;
     }
 
-    public void autoInterpret(Long chatId, String text, String photoUrl, String videoUrl, Integer messageId) {
-        Ad currentAd = currentAdsMap.getOrDefault(chatId, new Ad());
+    public void autoInterpret(Update update) {
+        if (update.hasMessage() && update.getMessage().hasText()) {
+            String text = update.getMessage().getText();
+            Long chatId = update.getMessage().getChatId();
+            Integer messageId = update.getMessage().getMessageId();
 
-        if (text != null) {
-            log.info("Text: " + text);
-            switch (text) {
-                case "Toshkent", "Andijon", "Buxoro", "Farg'ona", "Jizzax", "Sirdaryo", "Namangan", "Samarqand", "Xorazm", "Surxandaryo", "Qashqadaryo", "Qoraqalpog'iston", "Navoi", "Hammasini ko'rsatish" ->
-                        validateUserState(chatId, text, currentAd);
-                case "Tasdiqlash" -> finalizeAndSaveAd(chatId, currentAd);
-                case "Bekor qilish" -> cancelAutoAd(chatId);
-                case ButtonConstants.deleteAd -> deleteMyAutoAd(chatId);
-                case ButtonConstants.autoFavorite -> getMyFavorite(chatId);
-                case ButtonConstants.nextPage -> nextPage(chatId);
-                case ButtonConstants.previousPage -> previousPage(chatId);
-                case ButtonConstants.auto -> auto(chatId);
-                case ButtonConstants.placeAutoAd -> initializeNewAd(chatId);
-                case ButtonConstants.autoSearch -> autoSearch(chatId);
-                case ButtonConstants.mayAutoAds -> getMyAds(chatId);
-                case ButtonConstants.backInAutoAd -> back(chatId);
-            }
-            if (text.startsWith(ButtonConstants.nextPhoto) || text.startsWith(ButtonConstants.previousPhoto) || text.startsWith(ButtonConstants.video) || text.startsWith(ButtonConstants.favorite)) {
-                getNextPhoto(chatId, text, messageId);
-            }
-            if (text.startsWith("favorite")) {
-                addToFavorite(chatId, text);
-            }
-        }
-
-        if (photoUrl != null) {
-            saveUrl(text, photoUrl, null, currentAd);
-            userStateManager.setUserState(chatId, WAITING_FOR_CONFIRMATION);
             if (text != null) {
-                botCallback.sendPhotoWithInlKeyboard(chatId, currentAd.getDescription(), photoUrl, button.inlKeyboardConfirmation());
+                switch (text) {
+
+                    case TransButtonConstant.transport -> auto(chatId);
+                    case TransButtonConstant.automobile -> {
+                        botCallback.sendMessageWithInlKeyboard(chatId, "Bo'limni tanlang \uD83D\uDC47", button.inlKeyboardSection());
+                        userStateTrans.setUserState(chatId, AUTO_SECTION);
+                    }
+                    case TransButtonConstant.agroTech -> {
+                        botCallback.sendMessageWithInlKeyboard(chatId, "Bo'limni tanlang \uD83D\uDC47", button.inlKeyboardSection());
+                        userStateTrans.setUserState(chatId, AGRO_TECH_SECTION);
+                    }
+                    case TransButtonConstant.truck -> {
+                        botCallback.sendMessageWithInlKeyboard(chatId, "Bo'limni tanlang \uD83D\uDC47", button.inlKeyboardSection());
+                        userStateTrans.setUserState(chatId, TRUCK_SECTION);
+                    }
+                    case TransButtonConstant.otherTrans -> {
+                        botCallback.sendMessageWithInlKeyboard(chatId, "Bo'limni tanlang \uD83D\uDC47", button.inlKeyboardSection());
+                        userStateTrans.setUserState(chatId, OTHER_TRANS_SECTION);
+                    }
+                    case TransButtonConstant.spareParts -> {
+                        botCallback.sendMessageWithInlKeyboard(chatId, "Bo'limni tanlang \uD83D\uDC47", button.inlKeyboardSection());
+                        userStateTrans.setUserState(chatId, SPARE_PARTS_SECTION);
+                    }
+
+                    case TransButtonConstant.mainMenu -> botCallback.menu(chatId);
+                    case TransButtonConstant.deleteAd -> deleteMyAutoAd(chatId, null);
+                    case TransButtonConstant.autoFavorite -> getMyFavorite(chatId);
+                    case TransButtonConstant.nextPage -> nextPage(chatId);
+                    case TransButtonConstant.previousPage -> previousPage(chatId);
+                    case TransButtonConstant.placeAutoAd -> initializeNewAd(chatId);
+                    case TransButtonConstant.autoSearch -> autoSearch(chatId);
+                    case TransButtonConstant.mayAutoAds -> getMyAds(chatId);
+                    case TransButtonConstant.backInAutoAd -> back(chatId);
+                }
             }
+            userState.setUserState(chatId, AUTO);
+
+        } else if (update.hasCallbackQuery()) {
+            Long chatId = update.getCallbackQuery().getFrom().getId();
+            String callBackText = update.getCallbackQuery().getData();
+            Integer messageId = update.getCallbackQuery().getMessage().getMessageId();
+            Automobile currentAutomobile = currentAdAuto.getOrDefault(chatId, new Automobile());
+            Truck currentTruck = currentAdTruck.getOrDefault(chatId, new Truck());
+            AgroTechnology currentAgroTech = currentAdAgroTech.getOrDefault(chatId, new AgroTechnology());
+            OtherTransport currentOtherTrans = currentAdOtherTrans.getOrDefault(chatId, new OtherTransport());
+            SpareParts currentSpareParts = currentAdSpareParts.getOrDefault(chatId, new SpareParts());
+            validateUserState(chatId, callBackText, currentAutomobile, currentAgroTech, currentTruck, currentOtherTrans, currentSpareParts);
+
+            /*switch (callBackText) {
+                case "Tasdiqlash" -> finalizeAndSaveAd(chatId, currentAutomobile);
+                case "Bekor qilish" -> cancelAutoAd(chatId);
+            }
+            if (callBackText.startsWith(TransButtonConstant.nextPhoto) || callBackText.startsWith(TransButtonConstant.previousPhoto) ||
+                    callBackText.startsWith(TransButtonConstant.video) || callBackText.startsWith(TransButtonConstant.favorite)) {
+                getNextPhoto(chatId, callBackText, messageId);
+            }
+            if (callBackText.startsWith("favorite")) {
+                addToFavorite(chatId, callBackText);
+            }*/
+            userState.setUserState(chatId, AUTO);
+
+        } else if (update.getMessage().hasPhoto()) {
+            List<PhotoSize> photoSizes = update.getMessage().getPhoto();
+            Long chatId = update.getMessage().getFrom().getId();
+            PhotoSize largestPhoto = photoSizes.stream().max(Comparator.comparing(PhotoSize::getFileSize)).orElse(null);
+            String photoUrl = largestPhoto.getFileId();
+            String caption = update.getMessage().getCaption();
+            Integer messageId = update.getMessage().getMessageId();
+            Automobile currentAutomobile = currentAdAuto.getOrDefault(chatId, new Automobile());
+            if (photoUrl != null) {
+                saveUrl(caption, photoUrl, null, currentAutomobile);
+                userStateTrans.setUserState(chatId, WAITING_FOR_CONFIRMATION);
+                if (caption != null) {
+                    botCallback.sendPhotoWithInlKeyboard(chatId, currentAutomobile.getDescription(), photoUrl, button.inlKeyboardConfirmation());
+                }
+            }
+            userState.setUserState(chatId, AUTO);
+
+        } else if (update.getMessage().hasVideo()) {
+            Long chatId = update.getMessage().getFrom().getId();
+            Video video = update.getMessage().getVideo();
+            String text = update.getMessage().getCaption();
+            String videoUrl = video.getFileId();
+            Integer messageId = update.getMessage().getMessageId();
+            Automobile currentAutomobile = currentAdAuto.getOrDefault(chatId, new Automobile());
+            if (videoUrl != null) {
+                log.info("Videourl for Ad: " + videoUrl);
+                saveUrl(text, null, videoUrl, currentAutomobile);
+                userStateTrans.setUserState(chatId, WAITING_FOR_CONFIRMATION);
+            }
+            userState.setUserState(chatId, AUTO);
         }
-        if (videoUrl != null) {
-            log.info("Videourl for Ad: " + videoUrl);
-            saveUrl(text, null, videoUrl, currentAd);
-            userStateManager.setUserState(chatId, WAITING_FOR_CONFIRMATION);
-        }
+    }
+
+    private void getInlButton(Long chatId) {
+
     }
 
     private void getMyFavorite(Long chatId) {
-        List<Ad> favoriteAds = adService.getFavoritesByUserId(chatId);
-        if (favoriteAds.isEmpty()) {
+        List<Automobile> favoriteAutomobiles = automobileService.getFavoritesByUserId(chatId);
+        if (favoriteAutomobiles.isEmpty()) {
             botCallback.sendMessageWithInlKeyboard(chatId, "Sie haben keine favorisierten Anzeigen", null);
             return;
         }
-        for (Ad ad : favoriteAds) {
-            List<String> imageUrl = ad.getImageUrl();
-            botCallback.sendPhotoWithInlKeyboard(chatId, "E'lon nomeri: " + ad.getId() + "\n " +
-                    ad.getDescription(), imageUrl.get(0), null);
+        for (Automobile automobile : favoriteAutomobiles) {
+            List<String> imageUrl = automobile.getImageUrl();
+            botCallback.sendPhotoWithInlKeyboard(chatId, "E'lon nomeri: " + automobile.getId() + "\n " +
+                    automobile.getDescription(), imageUrl.get(0), null);
         }
     }
 
 
-    private void deleteMyAutoAd(Long chatId) {
-        boolean deleted = adService.deleteAdByUserIdAndAdId(chatId);
+    private void deleteMyAutoAd(Long chatId, Long adId) {
+        boolean deleted = automobileService.deleteAdByUserIdAndAdId(chatId, adId);
         if (deleted) {
             botCallback.sendMessageWithInlKeyboard(chatId, "Ihre Anzeigen wurden gelöscht.", null);
         } else {
@@ -112,14 +183,14 @@ public class AutoInterpreter {
     }
 
     private void editMyAd(Long chatId) {
-        List<Ad> userAds = adService.findByUserId(chatId);
-        if (userAds.isEmpty()) {
+        List<Automobile> userAutomobiles = automobileService.findByUserId(chatId);
+        if (userAutomobiles.isEmpty()) {
             botCallback.sendMessageWithInlKeyboard(chatId, "Sie haben keine Anzeigen zum Bearbeiten.", null);
             return;
         }
-        for (Ad ad : userAds) {
-            List<String> imageUrl = ad.getImageUrl();
-            botCallback.sendPhotoWithInlKeyboard(chatId, ad.getDescription(), imageUrl.get(0), button.inlKeyboardForMyAds());
+        for (Automobile automobile : userAutomobiles) {
+            List<String> imageUrl = automobile.getImageUrl();
+            botCallback.sendPhotoWithInlKeyboard(chatId, automobile.getDescription(), imageUrl.get(0), button.inlKeyboardForMyAds());
         }
     }
 
@@ -127,7 +198,7 @@ public class AutoInterpreter {
         BotUser user = userService.findByTelegramId(chatId);
         String[] parts = text.split("_");
         Long adId = Long.valueOf(parts[1]);
-        adService.addFavorite(user.getId(), adId);
+        automobileService.addFavorite(user.getId(), adId);
         userService.save(user);
     }
 
@@ -135,33 +206,33 @@ public class AutoInterpreter {
 
         String[] parts = text.split("_");
         Long adId = Long.parseLong(parts[1]);
-        Ad ad = adService.findById(adId);
-        String captionText = ad.getDescription();
-        List<String> imageUrls = ad.getImageUrl();
-        String videoUrl = ad.getVideoUrl();
+        Automobile automobile = automobileService.findById(adId);
+        String captionText = automobile.getDescription();
+        List<String> imageUrls = automobile.getImageUrl();
+        String videoUrl = automobile.getVideoUrl();
         int currentIndex = photoIndexMap.getOrDefault(chatId, 0);
         int nextIndex = (currentIndex + 1) % imageUrls.size();
         int previousIndex = (currentIndex - 1) % imageUrls.size();
-        if (text.startsWith(ButtonConstants.nextPhoto)) {
+        if (text.startsWith(TransButtonConstant.nextPhoto)) {
             if (imageUrls.size() >= 2) {
                 String nextImageUrl = imageUrls.get(nextIndex);
                 InlineKeyboardMarkup newKeyboard = button.inlKeyboardForAd(adId, nextIndex);
                 botCallback.editImageMessage(chatId, messageId, captionText, nextImageUrl, null, newKeyboard);
                 photoIndexMap.put(chatId, nextIndex);
             }
-        } else if (text.startsWith(ButtonConstants.previousPhoto)) {
+        } else if (text.startsWith(TransButtonConstant.previousPhoto)) {
             if (currentIndex != 0) {
                 String nextImageUrl = imageUrls.get(nextIndex);
                 InlineKeyboardMarkup newKeyboard = button.inlKeyboardForAd(adId, previousIndex);
                 botCallback.editImageMessage(chatId, messageId, captionText, nextImageUrl, null, newKeyboard);
                 photoIndexMap.put(chatId, nextIndex);
             }
-        } else if (text.startsWith(ButtonConstants.video)) {
+        } else if (text.startsWith(TransButtonConstant.video)) {
             InlineKeyboardMarkup newKeyboard = button.inlKeyboardForAd(adId, nextIndex);
             botCallback.editImageMessage(chatId, messageId, captionText, null, videoUrl, newKeyboard);
             photoIndexMap.put(chatId, nextIndex);
-        } else if (text.startsWith(ButtonConstants.favorite)) {
-            log.info("text: " + text + "  " + ButtonConstants.favorite);
+        } else if (text.startsWith(TransButtonConstant.favorite)) {
+            log.info("text: " + text + "  " + TransButtonConstant.favorite);
             InlineKeyboardMarkup newKeyboard = button.inlKeyboardAddFav(adId, nextIndex);
             botCallback.editImageMessage(chatId, messageId, captionText, null, null, newKeyboard);
 
@@ -169,11 +240,11 @@ public class AutoInterpreter {
     }
 
     private void getMyAds(Long chatId) {
-        List<Ad> myAds = adService.findByUserId(chatId);
-        if (!myAds.isEmpty()) {
-            for (Ad ad : myAds) {
-                List<String> photoUrls = ad.getImageUrl();
-                botCallback.sendPhotoWithInlKeyboard(chatId, ad.getDescription(), photoUrls.get(0), button.inlKeyboardForMyAds());
+        List<Automobile> myAutomobiles = automobileService.findByUserId(chatId);
+        if (!myAutomobiles.isEmpty()) {
+            for (Automobile automobile : myAutomobiles) {
+                List<String> photoUrls = automobile.getImageUrl();
+                botCallback.sendPhotoWithInlKeyboard(chatId, automobile.getDescription(), photoUrls.get(0), button.inlKeyboardForMyAds());
             }
         } else {
             botCallback.sendMessageWithInlKeyboard(chatId, "Sizda e'lon-pelon jo'qku \uD83D\uDE04", null);
@@ -182,9 +253,9 @@ public class AutoInterpreter {
     }
 
     private void cancelAutoAd(Long chatId) {
-        if (userStateManager.getUserState(chatId).equals(WAITING_FOR_CONFIRMATION)) {
-            currentAdsMap.remove(chatId);
-            userStateManager.setUserState(chatId, AUTO_AD_CANCELLED);
+        if (userStateTrans.getUserState(chatId).equals(WAITING_FOR_CONFIRMATION)) {
+            currentAdAuto.remove(chatId);
+            userStateTrans.setUserState(chatId, AUTO_AD_CANCELLED);
             botCallback.sendMessageWithInlKeyboard(chatId, "E'lon bekor qilindi", null);
         } else {
             botCallback.sendMessageWithInlKeyboard(chatId, "E'lon tasdiqlab bo'lindi, " + "Mening e'lonlarim bo'limidan o'chirishingiz mumkin", null);
@@ -192,30 +263,30 @@ public class AutoInterpreter {
 
     }
 
-    private void saveUrl(String text, String photoUrl, String videoUrl, Ad currentAd) {
-        List<String> photoUrls = currentAd.getImageUrl();
+    private void saveUrl(String text, String photoUrl, String videoUrl, Automobile currentAutomobile) {
+        List<String> photoUrls = currentAutomobile.getImageUrl();
         if (photoUrl != null) {
             if (photoUrls == null) {
                 photoUrls = new ArrayList<>();
-                currentAd.setImageUrl(photoUrls);
-                currentAd.setDescription(text);
+                currentAutomobile.setImageUrl(photoUrls);
+                currentAutomobile.setDescription(text);
             }
             photoUrls.add(photoUrl);
         } else {
-            currentAd.setVideoUrl(videoUrl);
+            currentAutomobile.setVideoUrl(videoUrl);
             log.info("VideoUrl in saveUrl " + videoUrl);
         }
 
     }
 
-    private void finalizeAndSaveAd(Long chatId, Ad currentAd) {
-        if (userStateManager.getUserState(chatId).equals(WAITING_FOR_CONFIRMATION)) {
+    private void finalizeAndSaveAd(Long chatId, Automobile currentAutomobile) {
+        if (userStateTrans.getUserState(chatId).equals(WAITING_FOR_CONFIRMATION)) {
             BotUser user = userService.findByTelegramId(chatId);
-            currentAd.setUser(user);
-            currentAdsMap.put(chatId, currentAd);
-            adService.save(currentAd);
-            currentAdsMap.remove(chatId);
-            userStateManager.setUserState(chatId, AUTO_AD_PLACED);
+            currentAutomobile.setUser(user);
+            currentAdAuto.put(chatId, currentAutomobile);
+            automobileService.saveAutomobile(currentAutomobile);
+            currentAdAuto.remove(chatId);
+            userStateTrans.setUserState(chatId, AUTO_AD_PLACED);
             botCallback.sendMessageWithInlKeyboard(chatId, "Avto E'loningiz joylandi", null);
         } else {
             botCallback.sendMessageWithInlKeyboard(chatId, "Siz e'lonni bekor qilgansiz, qaytadan yuklang", null);
@@ -225,35 +296,71 @@ public class AutoInterpreter {
 
     private void initializeNewAd(Long chatId) {
         BotUser user = userService.findByTelegramId(chatId);
-        Ad newAd = new Ad();
-        newAd.setUser(user);
-        currentAdsMap.put(chatId, newAd);
+        Automobile newAutomobile = new Automobile();
+        newAutomobile.setUser(user);
+        currentAdAuto.put(chatId, newAutomobile);
         botCallback.sendInlineKeyboardCites(chatId);
-        userStateManager.setUserState(chatId, PLACE_AD_AUTO);
+        userStateTrans.setUserState(chatId, PLACE_AUTOMOBILE_AD);
     }
 
-    private void validateUserState(Long chatId, String text, Ad currentAd) {
-        if (userStateManager.getUserState(chatId).equals(PLACE_AD_AUTO)) {
-            botCallback.sendMessageWithInlKeyboard(chatId, MessageText.autoAdExample, null);
-            Stadt stadt = stadtService.saveCity(text);
-            currentAd.setStandort(stadt);
-            userStateManager.setUserState(chatId, SENDING_PHOTO_FOR_AUTO);
+    private void validateUserState(Long chatId, String text, Automobile currentAutomobile, AgroTechnology currentAgroTech, Truck currentTruck,
+                                   OtherTransport currentOtherTech, SpareParts currentSpareParts) {
+        log.info("Text: " + text + "User State: " + userStateTrans.getUserState(chatId));
+        switch (userStateTrans.getUserState(chatId)) {
+            case PLACE_AUTOMOBILE_AD -> {
+                botCallback.sendMessageWithInlKeyboard(chatId, MessageText.autoAdExample, null);
+                Standort standort = standortService.saveCity(text);
+                currentAutomobile.setStandort(standort);
+                userStateTrans.setUserState(chatId, SEND_PHOTO_AUTO);
+            }
+            case PLACE_AGRO_TECH_AD -> {
+                botCallback.sendMessageWithInlKeyboard(chatId, MessageText.autoAdExample, null);
+                Standort standort = standortService.saveCity(text);
+                currentAgroTech.setStandort(standort);
+                userStateTrans.setUserState(chatId, SEND_PHOTO_AUTO);
+            }
+            case PLACE_TRUCK_AD -> {
+                botCallback.sendMessageWithInlKeyboard(chatId, MessageText.autoAdExample, null);
+                Standort standort = standortService.saveCity(text);
+                currentTruck.setStandort(standort);
+                userStateTrans.setUserState(chatId, SEND_PHOTO_AUTO);
+            }
+            case PLACE_OTHER_TECH_AD -> {
+                botCallback.sendMessageWithInlKeyboard(chatId, MessageText.autoAdExample, null);
+                Standort standort = standortService.saveCity(text);
+                currentOtherTech.setStandort(standort);
+                userStateTrans.setUserState(chatId, SEND_PHOTO_AUTO);
+            }
+            case PLACE_SPARE_PARTS_AD -> {
+                botCallback.sendMessageWithInlKeyboard(chatId, MessageText.autoAdExample, null);
+                Standort standort = standortService.saveCity(text);
+                currentSpareParts.setStandort(standort);
+                userStateTrans.setUserState(chatId, SEND_PHOTO_AUTO);
+            }
+            case AUTO_SECTION -> handleAutoSection(chatId, text);
+            case TRUCK_SECTION -> handleTruckSection(chatId,text);
+            case AGRO_TECH_SECTION -> handleAgroTechSection(chatId,text);
+            case OTHER_TRANS_SECTION -> handleOtherTransSection(chatId,text);
+            case SPARE_PARTS_SECTION -> handleSparePartsSection(chatId,text);
 
-        } else if (userStateManager.getUserState(chatId).equals(SEARCH_AD_AUTO)) {
+        }
+
+
+        if (userStateTrans.getUserState(chatId).equals(SEARCH_AD_AUTO)) {
 
             if (text.equals("Hammasini ko'rsatish")) {
 
-                List<Ad> allAds = adService.findAll();
-                log.info("All ads: " + allAds.size());
-                if (allAds != null && !allAds.isEmpty()) {
-                    getAd(chatId, allAds);
+                List<Automobile> allAutomobiles = automobileService.findAll();
+                log.info("All ads: " + allAutomobiles.size());
+                if (allAutomobiles != null && !allAutomobiles.isEmpty()) {
+                    getAd(chatId, allAutomobiles);
                     botCallback.sendMessageWithReplyKeyboard(chatId, "Navbatdagi e'lonlar", button.nextPage());
 
                 } else {
                     botCallback.sendMessageWithInlKeyboard(chatId, "Birorta ham e'lon topilmadi \uD83D\uDE45\u200D♂\uFE0F", null);
                 }
             } else {
-                List<Ad> byStadt = adService.findByStadt(text);
+                List<Automobile> byStadt = automobileService.findByStandort(text);
                 if (byStadt != null && !byStadt.isEmpty()) {
                     getAd(chatId, byStadt);
                     botCallback.sendMessageWithReplyKeyboard(chatId, "Navbatdagi e'lonlar", button.nextPage());
@@ -262,34 +369,57 @@ public class AutoInterpreter {
                     botCallback.sendMessageWithInlKeyboard(chatId, text + "da e'lon topilmadi \uD83D\uDE45\u200D♂\uFE0F", null);
                 }
             }
-            userStateManager.setUserState(chatId, SEARCH_AD_AUTO);
+            userStateTrans.setUserState(chatId, SEARCH_AD_AUTO);
 
         }
         photoIndexMap.clear();
 
     }
 
-    private void getAd(Long chatId, List<Ad> ads) {
+    private void handleSparePartsSection(Long chatId, String text) {
+    }
 
-        int currentIndex = userPageState.getOrDefault(chatId, ads.size());  // Starte mit der letzten Anzeige
+    private void handleOtherTransSection(Long chatId, String text) {
+    }
+
+    private void handleAgroTechSection(Long chatId, String text) {
+    }
+
+    private void handleTruckSection(Long chatId, String text) {
+        if (text.equals(TransButtonConstant.placeAutoAd))
+    }
+
+    private void handleAutoSection(Long chatId, String text) {
+        if (text.equals(TransButtonConstant.placeAutoAd)){
+            botCallback.sendMessageWithInlKeyboard(chatId, MessageText.autoAdExample,null);
+            userStateTrans.setUserState(chatId,PLACE_AUTOMOBILE_AD);
+
+        }else {
+            
+        }
+    }
+
+    private void getAd(Long chatId, List<Automobile> automobiles) {
+
+        int currentIndex = userPageState.getOrDefault(chatId, automobiles.size());  // Starte mit der letzten Anzeige
         int startIndex = Math.max(0, currentIndex - PAGE_SIZE);
         log.info("currentIndex: " + currentIndex + " startIndex: " + startIndex);
         for (int i = startIndex; i < currentIndex; i++) {
-            Ad ad = ads.get(i);
-            List<String> photoUrls = ad.getImageUrl();
+            Automobile automobile = automobiles.get(i);
+            List<String> photoUrls = automobile.getImageUrl();
             if (photoUrls != null && !photoUrls.isEmpty()) {
-                botCallback.sendPhotoWithInlKeyboard(chatId, "E'lon nomeri: " + ad.getId() + "\n " +
-                        ad.getDescription(), photoUrls.get(0), button.inlKeyboardForAd(ad.getId(), null));
+                botCallback.sendPhotoWithInlKeyboard(chatId, "E'lon nomeri: " + automobile.getId() + "\n " +
+                        automobile.getDescription(), photoUrls.get(0), button.inlKeyboardForAd(automobile.getId(), null));
             }
         }
         userPageState.put(chatId, startIndex);
     }
 
     public void nextPage(Long chatId) {
-        List<Ad> allAds = adService.findAll();
-        int currentIndex = userPageState.getOrDefault(chatId, allAds.size());
+        List<Automobile> allAutomobiles = automobileService.findAll();
+        int currentIndex = userPageState.getOrDefault(chatId, allAutomobiles.size());
         if (currentIndex > 0) {
-            getAd(chatId, allAds);
+            getAd(chatId, allAutomobiles);
         } else {
             botCallback.sendMessageWithInlKeyboard(chatId, "Jo'q boshqa e'lon-pelon! \uD83D\uDE04", null);
         }
@@ -297,28 +427,28 @@ public class AutoInterpreter {
 
     public void previousPage(Long chatId) {
         int currentIndex = userPageState.getOrDefault(chatId, 0) + PAGE_SIZE;
-        userPageState.put(chatId, Math.min(adService.findAll().size(), currentIndex));
-        List<Ad> allAds = adService.findAll();
-        getAd(chatId, allAds);
+        userPageState.put(chatId, Math.min(automobileService.findAll().size(), currentIndex));
+        List<Automobile> allAutomobiles = automobileService.findAll();
+        getAd(chatId, allAutomobiles);
     }
 
 
     private void autoSearch(Long chatId) {
         botCallback.sendInKeyboardForSearch(chatId);
-        userStateManager.setUserState(chatId, SEARCH_AD_AUTO);
+        userStateTrans.setUserState(chatId, SEARCH_AD_AUTO);
         photoIndexMap.clear();
 
     }
 
     private void auto(Long chatId) {
-        botCallback.sendAutoMenu(chatId);
-        userStateManager.setUserState(chatId, AUTO);
+        botCallback.sendMessageWithReplyKeyboard(chatId, "Quyidagilardan birini tanlang!", button.autoMenu());
+        userState.setUserState(chatId, AUTO);
         photoIndexMap.clear();
     }
 
     private void back(Long chatId) {
         botCallback.menu(chatId);
-        userStateManager.setUserState(chatId, START);
+        userState.setUserState(chatId, START);
         photoIndexMap.clear();
 
     }

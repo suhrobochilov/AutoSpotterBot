@@ -2,9 +2,9 @@ package car.autoSpotterBot;
 
 import car.autoSpotterBot.autoUtil.AutoInterpreter;
 import car.autoSpotterBot.autoUtil.BotCallback;
-import car.autoSpotterBot.autoUtil.UserStateManager;
+import car.autoSpotterBot.state.UserStateManager;
 import car.autoSpotterBot.button.Button;
-import car.autoSpotterBot.button.ButtonConstants;
+import car.autoSpotterBot.button.MainButtonConstants;
 import car.autoSpotterBot.configuration.BotConfig;
 import car.autoSpotterBot.model.BotUser;
 import car.autoSpotterBot.service.BotUserService;
@@ -19,19 +19,21 @@ import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageMedia;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
-import org.telegram.telegrambots.meta.api.objects.*;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
+import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto;
 import org.telegram.telegrambots.meta.api.objects.media.InputMediaVideo;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static car.autoSpotterBot.autoUtil.UserStateInAuto.*;
+import static car.autoSpotterBot.state.UserStateInAuto.AUTO;
+import static car.autoSpotterBot.state.UserStateInAuto.START;
 
 @Component
 public class MyBot extends TelegramLongPollingBot implements BotCallback {
@@ -61,58 +63,46 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String text = update.getMessage().getText();
             Long chatId = update.getMessage().getChatId();
-            Integer messageId = update.getMessage().getMessageId();
             String firstName = update.getMessage().getFrom().getFirstName();
             String lastName = update.getMessage().getFrom().getLastName();
             String userName = update.getMessage().getFrom().getUserName();
             BotUser existingUser = userService.findByTelegramId(chatId);
             if (existingUser == null) {
-                BotUser newUser = new BotUser();
-                newUser.setTelegramId(chatId);
-                newUser.setFirstName(firstName);
-                newUser.setLastName(lastName);
-                newUser.setUsername(userName);
-                userService.save(newUser);
+                saveNewUser(chatId, firstName, lastName, userName);
             }
-            switch (text) {
-
-                case "/start" -> {
-                    mainMenu(chatId);
-                    userStateManager.setUserState(chatId, START);
+            if (userStateManager.getUserState(chatId)!= null && 
+                    userStateManager.getUserState(chatId).equals(AUTO)) {
+                autoInterpreter.autoInterpret(update);
+            }
+            if (text != null) {
+                switch (text) {
+                    case "/start" -> sendMessageWithReplyKeyboard(chatId, "Asaslomu alaykum Botga Xush kelibsiz", button.mainMenu());
+                    case MainButtonConstants.transport -> autoInterpreter.autoInterpret(update);
+                    case MainButtonConstants.realEstate, MainButtonConstants.electronics ->
+                            sendMessageWithInlKeyboard(chatId, "Bu funksiya hali tayyor emas", null);
                 }
-                case ButtonConstants.auto, ButtonConstants.placeAutoAd, ButtonConstants.autoSearch, ButtonConstants.backInAutoAd, ButtonConstants.mayAutoAds,
-                        ButtonConstants.nextPage, ButtonConstants.previousPage, ButtonConstants.autoFavorite ->
-                        autoInterpreter.autoInterpret(chatId, text, null, null, messageId);
-                case ButtonConstants.immobile, ButtonConstants.foods, ButtonConstants.service ->
-                        sendMessageWithInlKeyboard(chatId, "Bu funksiya hali tayyor emas", null);
             }
+        } else if (update.hasMessage() && update.getMessage().hasPhoto()) {
+            
+        }else if (update.hasMessage() && update.getMessage().hasVideo()){
 
         } else if (update.hasCallbackQuery()) {
-            Long chatId = update.getCallbackQuery().getFrom().getId();
-            String callBackQuery = update.getCallbackQuery().getData();
-            Integer messageId = update.getCallbackQuery().getMessage().getMessageId();
-            autoInterpreter.autoInterpret(chatId, callBackQuery, null, null, messageId);
-
-        } else if (update.getMessage().hasPhoto()) {
-            List<PhotoSize> photoSizes = update.getMessage().getPhoto();
-            Long chatId = update.getMessage().getFrom().getId();
-            PhotoSize largestPhoto = photoSizes.stream().max(Comparator.comparing(PhotoSize::getFileSize)).orElse(null);
-            String photoUrl = largestPhoto.getFileId();
-            String caption = update.getMessage().getCaption();
-            Integer messageId = update.getMessage().getMessageId();
-            if (userStateManager.getUserState(chatId).equals(SENDING_PHOTO_FOR_AUTO) || userStateManager.getUserState(chatId).equals(WAITING_FOR_CONFIRMATION)) {
-                autoInterpreter.autoInterpret(chatId, caption, photoUrl, null, messageId);
-            }
-        } else if (update.getMessage().hasVideo()) {
-            Long chatId = update.getMessage().getFrom().getId();
-            Video video = update.getMessage().getVideo();
-            String videoUrl = video.getFileId();
-            Integer messageId = update.getMessage().getMessageId();
-            if (userStateManager.getUserState(chatId).equals(SENDING_PHOTO_FOR_AUTO) || userStateManager.getUserState(chatId).equals(WAITING_FOR_CONFIRMATION)) {
-                autoInterpreter.autoInterpret(chatId, null, null, videoUrl, messageId);
+            long chatId = update.getCallbackQuery().getFrom().getId();
+            if (userStateManager.getUserState(chatId)!= null &&
+                    userStateManager.getUserState(chatId).equals(AUTO)) {
+                autoInterpreter.autoInterpret(update);
             }
         }
 
+    }
+
+    private void saveNewUser(Long chatId, String firstName, String lastName, String userName) {
+        BotUser newUser = new BotUser();
+        newUser.setTelegramId(chatId);
+        newUser.setFirstName(firstName);
+        newUser.setLastName(lastName);
+        newUser.setUsername(userName);
+        userService.save(newUser);
     }
 
     @Override
@@ -173,6 +163,7 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
     @Override
     public void menu(long chatId) {
         sendMessageWithReplyKeyboard(chatId, "Bo'limni tanlang!", button.mainMenu());
+        userStateManager.setUserState(chatId,START);
     }
 
     @Override
@@ -201,11 +192,6 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
         } catch (TelegramApiException e) {
             log.error("Failed to send message to user: {}", chatId, e);
         }
-    }
-
-    @Override
-    public void sendAutoMenu(Long chatId) {
-        sendMessageWithReplyKeyboard(chatId, "Quyidagilardan birini tanlang!", button.autoMenu());
     }
 
     @Override

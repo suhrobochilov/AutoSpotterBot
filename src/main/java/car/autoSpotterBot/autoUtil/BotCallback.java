@@ -16,8 +16,6 @@ public interface BotCallback {
 
     void sendMessageWithReplyKeyboard(Long chatId, String text, ReplyKeyboardMarkup keyboard);
 
-    void sendAutoMenu(Long chatId);
-
     void sendInlineKeyboardCites(Long chatId);
 
     void sendPhotoWithInlKeyboard(Long chatid, String text, String photoUrl, InlineKeyboardMarkup inlineKeyboardMarkup);

@@ -1,32 +1,34 @@
-package car.autoSpotterBot.model;
+package car.autoSpotterBot.model.transport;
 
 
+import car.autoSpotterBot.model.BotUser;
+import car.autoSpotterBot.model.Standort;
 import jakarta.persistence.*;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.List;
 
 @Entity
-public class Ad {
+@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS) // TPC Strategy
+public abstract class Transport {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @ManyToOne(cascade = CascadeType.REMOVE)
-    @JoinColumn(name = "user_id",nullable = true)
+    @JoinColumn(name = "user_id")
     private BotUser user;
-
-    @ManyToMany(cascade = CascadeType.REMOVE)
-    private List<BotUser> favoritedByUsers;
 
     @ManyToOne
     @JoinColumn(name = "stadt_id")
-    private Stadt standort;
+    private Standort standort;
+
     @Column(length = 5000)
     private List<String> imageUrl;
+
     @Column(length = 1000)
     private String description;
+
     @Column(length = 5000)
     private String videoUrl;
 
@@ -46,19 +48,11 @@ public class Ad {
         this.user = user;
     }
 
-    public List<BotUser> getFavoritedByUsers() {
-        return favoritedByUsers;
-    }
-
-    public void setFavoritedByUsers(List<BotUser> favoritedByUsers) {
-        this.favoritedByUsers = favoritedByUsers;
-    }
-
-    public Stadt getStandort() {
+    public Standort getStandort() {
         return standort;
     }
 
-    public void setStandort(Stadt standort) {
+    public void setStandort(Standort standort) {
         this.standort = standort;
     }
 
@@ -69,7 +63,6 @@ public class Ad {
     public void setImageUrl(List<String> imageUrl) {
         this.imageUrl = imageUrl;
     }
-
 
     public String getDescription() {
         return description;
@@ -87,4 +80,3 @@ public class Ad {
         this.videoUrl = videoUrl;
     }
 }
-
