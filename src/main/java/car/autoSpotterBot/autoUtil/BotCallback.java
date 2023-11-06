@@ -8,10 +8,6 @@ public interface BotCallback {
 
     void editImageMessage(Long chatId, Integer messageId, String captionText, String imageUrl, String videoUrl, InlineKeyboardMarkup newKeyboard);
 
-    void mainMenu(long chatId);
-
-    void menu(long chatId);
-
     Message sendMessageWithInlKeyboard(Long chatId, String text, InlineKeyboardMarkup keyboard);
 
     void sendMessageWithReplyKeyboard(Long chatId, String text, ReplyKeyboardMarkup keyboard);
@@ -21,4 +17,6 @@ public interface BotCallback {
     void sendPhotoWithInlKeyboard(Long chatid, String text, String photoUrl, InlineKeyboardMarkup inlineKeyboardMarkup);
 
     void sendInKeyboardForSearch(Long chatId);
+
+    void deleteMessageLater(Long chatId, Integer messageId, long delayInSeconds);
 }

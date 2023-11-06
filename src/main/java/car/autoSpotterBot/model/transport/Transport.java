@@ -15,7 +15,7 @@ public abstract class Transport {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @ManyToOne(cascade = CascadeType.REMOVE)
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private BotUser user;
 
@@ -26,7 +26,7 @@ public abstract class Transport {
     @Column(length = 5000)
     private List<String> imageUrl;
 
-    @Column(length = 1000)
+    @Column(length = 1024)
     private String description;
 
     @Column(length = 5000)

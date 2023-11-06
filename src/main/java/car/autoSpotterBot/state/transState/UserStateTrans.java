@@ -1,4 +1,4 @@
-package car.autoSpotterBot.state;
+package car.autoSpotterBot.state.transState;
 
 import org.springframework.stereotype.Service;
 

@@ -1,4 +1,4 @@
-package car.autoSpotterBot.state;
+package car.autoSpotterBot.state.transState;
 
 public enum UserStateInAuto {
     START,
@@ -25,7 +25,8 @@ public enum UserStateInAuto {
     SEND_PHOTO_AGROTECH,
     SEND_PHOTO_OTHER_TECH,
     SEND_PHOTO_SPARE_PARTS,
-    AUTO_SECTION, TRUCK_SECTION, AGRO_TECH_SECTION, OTHER_TRANS_SECTION, SPARE_PARTS_SECTION, DEFAULT
+    AUTO_SECTION, TRUCK_SECTION, AGRO_TECH_SECTION, OTHER_TRANS_SECTION, SPARE_PARTS_SECTION, DEFAULT,
+    EDIT_MY_AD_TEXT
 
     // ... und so weiter für jeden Schritt
 }

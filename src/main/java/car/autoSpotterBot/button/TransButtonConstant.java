@@ -22,8 +22,9 @@ public class TransButtonConstant {
     public static final String truck = "Yuk mashinalari";
     public static final String agroTech = "Q.X. texnikalari";
     public static final String otherTrans = "Boshqa texnikalar";
-    public static final  String spareParts = "Ehtiyot qismlar";
-
+    public static final String spareParts = "Ehtiyot qismlar";
+    public static final String confirm = "Tasdiqlash";
 
     public static final String mainMenu = "Asosiy menu";
+    public static final String cancel = "Bekor qilish";
 }

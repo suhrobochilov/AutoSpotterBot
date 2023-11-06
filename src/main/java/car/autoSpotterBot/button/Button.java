@@ -78,6 +78,7 @@ public class Button {
         inlineKeyboardMarkup.setKeyboard(rows);
         return inlineKeyboardMarkup;
     }
+
     public InlineKeyboardMarkup inlKeyboardSection() {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
@@ -98,30 +99,29 @@ public class Button {
         return inlineKeyboardMarkup;
     }
 
-    public InlineKeyboardMarkup inlKeyboardForMyAds() {
+    public InlineKeyboardMarkup inlKeyboardForMyAds(Long adId, Integer nextIndex) {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         List<InlineKeyboardButton> row1 = new ArrayList<>();
-        List<InlineKeyboardButton> row2 = new ArrayList<>();
+         List<InlineKeyboardButton> row2 = new ArrayList<>();
         InlineKeyboardButton deleteAd = new InlineKeyboardButton();
-        InlineKeyboardButton editText = new InlineKeyboardButton();
-        InlineKeyboardButton editPhoto = new InlineKeyboardButton();
-        InlineKeyboardButton editVideo = new InlineKeyboardButton();
+        InlineKeyboardButton next = new InlineKeyboardButton();
+        InlineKeyboardButton previous = new InlineKeyboardButton();
+         InlineKeyboardButton video = new InlineKeyboardButton();
         deleteAd.setText("E'lonni o'chirish \uD83D\uDD34");
-        deleteAd.setCallbackData(TransButtonConstant.deleteAd);
-        editText.setText("Matnni o'zgartirish \uD83D\uDCDD");
-        editText.setCallbackData(TransButtonConstant.editText);
-        editPhoto.setText("Rasmni o'zgartirish \uD83D\uDCF8");
-        editPhoto.setCallbackData(TransButtonConstant.editPhoto);
-        editVideo.setText("Videoni o'zgartirish \uD83D\uDCF9");
-        editVideo.setCallbackData(TransButtonConstant.editVideo);
-
-        row1.add(deleteAd);
-        row1.add(editText);
-        row2.add(editVideo);
-        row2.add(editPhoto);
+        deleteAd.setCallbackData(TransButtonConstant.deleteAd + "_" + adId);
+        next.setText("Keyingi rasm ▶\uFE0F");
+        next.setCallbackData(TransButtonConstant.nextPhoto + adId + "_" + nextIndex);
+        previous.setText("◀\uFE0F Oldingi rasm");
+        previous.setCallbackData(TransButtonConstant.previousPhoto + adId + "_" + nextIndex);
+        video.setText("Video \uD83D\uDCF9");
+        video.setCallbackData(TransButtonConstant.video + adId);
+        row1.add(previous);
+         row1.add(next);
+         row2.add(video);
+        row2.add(deleteAd);
         rows.add(row1);
-        rows.add(row2);
+         rows.add(row2);
 
         inlineKeyboardMarkup.setKeyboard(rows);
         return inlineKeyboardMarkup;
@@ -185,7 +185,7 @@ public class Button {
         return inlineKeyboardMarkup;
     }
 
-    public ReplyKeyboardMarkup autoMenu() {
+    public ReplyKeyboardMarkup transportMenu() {
         ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
         List<KeyboardRow> keyboard = new ArrayList<>();
         replyKeyboardMarkup.setResizeKeyboard(true);
@@ -200,6 +200,29 @@ public class Button {
         row2.add(new KeyboardButton(TransButtonConstant.otherTrans));
         row3.add(new KeyboardButton(TransButtonConstant.spareParts));
         row3.add(new KeyboardButton(TransButtonConstant.mainMenu));
+        keyboard.add(row1);
+        keyboard.add(row2);
+        keyboard.add(row3);
+
+        replyKeyboardMarkup.setKeyboard(keyboard);
+        return replyKeyboardMarkup;
+    }
+
+    public ReplyKeyboardMarkup autoMenu() {
+        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        List<KeyboardRow> keyboard = new ArrayList<>();
+        replyKeyboardMarkup.setResizeKeyboard(true);
+        KeyboardRow row1 = new KeyboardRow();
+        KeyboardRow row2 = new KeyboardRow();
+        KeyboardRow row3 = new KeyboardRow();
+
+        row1.add(new KeyboardButton(TransButtonConstant.placeAutoAd));
+        row1.add(new KeyboardButton(TransButtonConstant.mayAutoAds));
+
+        row2.add(new KeyboardButton(TransButtonConstant.autoSearch));
+        row2.add(new KeyboardButton(TransButtonConstant.autoFavorite));
+        row3.add(new KeyboardButton(TransButtonConstant.backInAutoAd));
+
         keyboard.add(row1);
         keyboard.add(row2);
         keyboard.add(row3);
@@ -249,7 +272,6 @@ public class Button {
 
         return Arrays.asList(bundeslanderRow1, bundeslanderRow2, bundeslanderRow3, bundeslanderRow4, bundeslanderRow5);
     }
-
 
 
 }

@@ -1,13 +1,13 @@
 package car.autoSpotterBot;
 
-import car.autoSpotterBot.autoUtil.AutoInterpreter;
 import car.autoSpotterBot.autoUtil.BotCallback;
-import car.autoSpotterBot.state.UserStateManager;
+import car.autoSpotterBot.autoUtil.TransportInterpreter;
 import car.autoSpotterBot.button.Button;
 import car.autoSpotterBot.button.MainButtonConstants;
 import car.autoSpotterBot.configuration.BotConfig;
 import car.autoSpotterBot.model.BotUser;
 import car.autoSpotterBot.service.BotUserService;
+import car.autoSpotterBot.state.UserStateManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,9 +31,11 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import static car.autoSpotterBot.state.UserStateInAuto.AUTO;
-import static car.autoSpotterBot.state.UserStateInAuto.START;
+import static car.autoSpotterBot.state.transState.UserStateInAuto.AUTO;
 
 @Component
 public class MyBot extends TelegramLongPollingBot implements BotCallback {
@@ -43,7 +45,9 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
     private final UserStateManager userStateManager;
     private final BotConfig botConfig;
     private final Map<Long, Integer> messageIdMap = new ConcurrentHashMap<>();
-    private AutoInterpreter autoInterpreter;
+    private TransportInterpreter transportInterpreter;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
 
     public MyBot(BotUserService userService, Button buttonService, UserStateManager userStateManager, BotConfig botConfig) {
         this.userService = userService;
@@ -54,8 +58,8 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
 
     @Autowired
     @Lazy
-    public void setAutoInterpreter(AutoInterpreter autoInterpreter) {
-        this.autoInterpreter = autoInterpreter;
+    public void setAutoInterpreter(TransportInterpreter transportInterpreter) {
+        this.transportInterpreter = transportInterpreter;
     }
 
     @Override
@@ -70,27 +74,32 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
             if (existingUser == null) {
                 saveNewUser(chatId, firstName, lastName, userName);
             }
-            if (userStateManager.getUserState(chatId)!= null && 
+            if (userStateManager.getUserState(chatId) != null &&
                     userStateManager.getUserState(chatId).equals(AUTO)) {
-                autoInterpreter.autoInterpret(update);
+                transportInterpreter.autoInterpret(update);
             }
             if (text != null) {
                 switch (text) {
-                    case "/start" -> sendMessageWithReplyKeyboard(chatId, "Asaslomu alaykum Botga Xush kelibsiz", button.mainMenu());
-                    case MainButtonConstants.transport -> autoInterpreter.autoInterpret(update);
+                    case "/start" ->
+                            sendMessageWithReplyKeyboard(chatId, "Asaslomu alaykum Botga Xush kelibsiz", button.mainMenu());
+                    case MainButtonConstants.transport -> transportInterpreter.autoInterpret(update);
                     case MainButtonConstants.realEstate, MainButtonConstants.electronics ->
                             sendMessageWithInlKeyboard(chatId, "Bu funksiya hali tayyor emas", null);
                 }
             }
         } else if (update.hasMessage() && update.getMessage().hasPhoto()) {
-            
-        }else if (update.hasMessage() && update.getMessage().hasVideo()){
-
+            Long chatId = update.getMessage().getChatId();
+            if (userStateManager.getUserState(chatId).equals(AUTO))
+                transportInterpreter.autoInterpret(update);
+        } else if (update.hasMessage() && update.getMessage().hasVideo()) {
+            Long chatId = update.getMessage().getChatId();
+            if (userStateManager.getUserState(chatId).equals(AUTO))
+                transportInterpreter.autoInterpret(update);
         } else if (update.hasCallbackQuery()) {
             long chatId = update.getCallbackQuery().getFrom().getId();
-            if (userStateManager.getUserState(chatId)!= null &&
+            if (userStateManager.getUserState(chatId) != null &&
                     userStateManager.getUserState(chatId).equals(AUTO)) {
-                autoInterpreter.autoInterpret(update);
+                transportInterpreter.autoInterpret(update);
             }
         }
 
@@ -151,19 +160,6 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
             }
 
         }
-    }
-
-
-    @Override
-    public void mainMenu(long chatId) {
-        sendMessageWithReplyKeyboard(chatId, "Assalomu Alaykum Botga xush kelibsiz \n" +
-                "Quyidagilardan birini tanlang!", button.mainMenu());
-    }
-
-    @Override
-    public void menu(long chatId) {
-        sendMessageWithReplyKeyboard(chatId, "Bo'limni tanlang!", button.mainMenu());
-        userStateManager.setUserState(chatId,START);
     }
 
     @Override
@@ -231,16 +227,21 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
 
     }
 
-    public void deleteMessage(Long chatId, Integer messageId) {
-        DeleteMessage deleteMessage = new DeleteMessage();
-        deleteMessage.setChatId(String.valueOf(chatId));
-        deleteMessage.setMessageId(messageId);
+    @Override
+    public void deleteMessageLater(Long chatId, Integer messageId, long delayInSeconds) {
+        Runnable task = () -> {
+            DeleteMessage deleteMessage = new DeleteMessage();
+            deleteMessage.setChatId(String.valueOf(chatId));
+            deleteMessage.setMessageId(messageId);
 
-        try {
-            execute(deleteMessage);
-        } catch (TelegramApiException e) {
-            log.error("Failed to delete message with ID: {} in chat: {}", messageId, chatId, e);
-        }
+            try {
+                execute(deleteMessage);
+            } catch (TelegramApiException e) {
+                e.printStackTrace();
+            }
+        };
+
+        scheduler.schedule(task, delayInSeconds, TimeUnit.SECONDS);
     }
 
     private void storeSentMessageId(Long chatId, Integer messageId) {

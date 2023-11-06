@@ -68,6 +68,7 @@ public class AutomobileService {
     }
 
     public void addFavorite(Long userId, Long adId) {
+        log.info("UserId: "+ userId);
         BotUser user = botUserRepository.findByTelegramId(userId);
         if (user == null) {
             throw new RuntimeException("User nicht gefunden");
@@ -115,11 +116,12 @@ public class AutomobileService {
     }
 
 
-    public void deleteById(Long id) {
+    public boolean deleteById(Long id) {
         if (automobileRepository.existsById(id)) {
             automobileRepository.deleteById(id);
         } else {
             throw new AdNotFoundException(id);
         }
+        return true;
     }
 }
