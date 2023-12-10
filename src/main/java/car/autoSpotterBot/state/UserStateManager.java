@@ -1,27 +1,29 @@
 package car.autoSpotterBot.state;
 
-import car.autoSpotterBot.state.transState.UserStateInAuto;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
 @Service
 public class UserStateManager {
-    private static final UserStateManager instance = new UserStateManager();
-    private final Map<Long, UserStateInAuto> userStateMap = new HashMap<>();
+    private final Map<Long, UserStateConstants> userMainStatus = new HashMap<>();
+    private final Map<Long, UserStateConstants> userSubStatus = new HashMap<>();
 
     private UserStateManager() {}
-
-    public static UserStateManager getInstance() {
-        return instance;
+    public UserStateConstants getUserMainStatus(long userId) {
+        return userMainStatus.get(userId);
+    }
+    public UserStateConstants getUserSubStatus(long userId) {
+        return userSubStatus.get(userId);
     }
 
-    public UserStateInAuto getUserState(long userId) {
-        return userStateMap.get(userId);
+
+    public void setUserMainStatus(long userId, UserStateConstants state) {
+        userMainStatus.put(userId, state);
+    }
+    public void setUserSubStatus(long userId, UserStateConstants state) {
+        userSubStatus.put(userId, state);
     }
 
-    public void setUserState(long userId, UserStateInAuto state) {
-        userStateMap.put(userId, state);
-    }
 }
 

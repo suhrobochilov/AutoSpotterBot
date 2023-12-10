@@ -1,13 +1,13 @@
-package car.autoSpotterBot.service.transport;
+package car.autoSpotterBot.service.realEstate;
 
 import car.autoSpotterBot.exception.AdNotFoundException;
 import car.autoSpotterBot.model.BotUser;
 import car.autoSpotterBot.model.Standort;
-import car.autoSpotterBot.model.transport.Automobile;
+import car.autoSpotterBot.model.realeState.House;
 import car.autoSpotterBot.model.transport.Favorit;
 import car.autoSpotterBot.repository.BotUserRepository;
 import car.autoSpotterBot.repository.StandortRepository;
-import car.autoSpotterBot.repository.transport.AutomobileRepository;
+import car.autoSpotterBot.repository.realEstate.HouseRepository;
 import car.autoSpotterBot.repository.transport.FavoritRepository;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
@@ -21,9 +21,9 @@ import java.util.Optional;
 
 @Service
 @Transactional
-public class AutomobileService {
-    private static final Logger log = LoggerFactory.getLogger(AutomobileService.class);
-    private final AutomobileRepository automobileRepository;
+public class HouseService {
+    private static final Logger log = LoggerFactory.getLogger(ApartmentService.class);
+    private final HouseRepository houseRepository;
     @Autowired
     private StandortRepository standortRepository;
     @Autowired
@@ -31,36 +31,35 @@ public class AutomobileService {
     @Autowired
     private FavoritRepository favoritRepository;
 
-    @Autowired
-    public AutomobileService(AutomobileRepository automobileRepository) {
-        this.automobileRepository = automobileRepository;
+    public HouseService(HouseRepository houseRepository) {
+        this.houseRepository = houseRepository;
     }
 
-    public List<Automobile> findAll() {
-        return automobileRepository.findAll();
+    public List<House> findAll() {
+        return houseRepository.findAll();
     }
 
-    public Automobile findById(Long id) {
-        return automobileRepository.findById(id)
+    public House findById(Long id) {
+        return houseRepository.findById(id)
                 .orElseThrow(() -> new AdNotFoundException(id));
     }
 
-    public Automobile saveAutomobile(Automobile automobile) {
-        return automobileRepository.save(automobile);
+    public House saveHouse(House automobile) {
+        return houseRepository.save(automobile);
     }
 
-    public List<Automobile> findByStandort(String stadtName) {
+    public List<House> findByStandort(String stadtName) {
         Standort standort = standortRepository.findByName(stadtName);
         if (standort != null) {
-            return automobileRepository.findByStandort(standort);
+            return houseRepository.findByStandort(standort);
         }
         return new ArrayList<>();
     }
 
-    public List<Automobile> findByUserId(Long userId) {
+    public List<House> findByUserId(Long userId) {
         BotUser user = botUserRepository.findByTelegramId(userId);
         if (user != null) {
-            return automobileRepository.findByUserId(user.getId());
+            return houseRepository.findByUserId(user.getId());
         }
         return new ArrayList<>();
     }
@@ -71,7 +70,7 @@ public class AutomobileService {
         if (user == null) {
             throw new RuntimeException("User nicht gefunden");
         }
-        Automobile ad = findById(adId);
+        House ad = findById(adId);
         Favorit favorite = new Favorit();
         favorite.setUser(user);
         favorite.setTransport(ad);
@@ -87,16 +86,16 @@ public class AutomobileService {
     }
 
 
-    public List<Automobile> getFavoritesByUserId(Long chatId) {
+    public List<House> getFavoritesByUserId(Long chatId) {
         BotUser user = botUserRepository.findByTelegramId(chatId);
         if (user == null) {
             throw new RuntimeException("User nicht gefunden");
         }
         List<Favorit> favorites = favoritRepository.findByUserId(user.getId());
-        List<Automobile> automobiles = new ArrayList<>();
+        List<House> automobiles = new ArrayList<>();
         for (Favorit favorite : favorites) {
-            if (favorite.getTransport() instanceof Automobile) {
-                automobiles.add((Automobile) favorite.getTransport());
+            if (favorite.getTransport() instanceof House) {
+                automobiles.add((House) favorite.getTransport());
             }
         }
         return automobiles;
@@ -107,16 +106,16 @@ public class AutomobileService {
         if (user == null) {
             throw new RuntimeException("User nicht gefunden");
         }
-        Optional<Automobile> ad = automobileRepository.findByIdAndUserId(adId, user.getId());
+        Optional<House> ad = houseRepository.findByIdAndUserId(adId, user.getId());
         log.info("UserId: " + user.getId() + " adId: " + ad.get().getId());
-        automobileRepository.deleteById(ad.get().getId());
+        houseRepository.deleteById(ad.get().getId());
         return true;
     }
 
 
     public boolean deleteById(Long id) {
-        if (automobileRepository.existsById(id)) {
-            automobileRepository.deleteById(id);
+        if (houseRepository.existsById(id)) {
+            houseRepository.deleteById(id);
         } else {
             throw new AdNotFoundException(id);
         }

@@ -1,8 +1,7 @@
 package car.autoSpotterBot.model;
 
-import car.autoSpotterBot.model.transport.AgroTechnology;
-import car.autoSpotterBot.model.transport.Automobile;
 import car.autoSpotterBot.model.transport.Favorit;
+import car.autoSpotterBot.model.transport.Ad;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -21,11 +20,10 @@ public class BotUser {
     private boolean isAdmin;
 
     @OneToMany(mappedBy = "user")
-    private List<Automobile> automobiles;
+    private List<Ad> automobiles;
 
     @OneToMany(mappedBy = "user")
     private List<Favorit> favoriten;
-
 
     public String getFirstName() {
         return firstName;
@@ -75,19 +73,19 @@ public class BotUser {
         isAdmin = admin;
     }
 
-    public List<Automobile> getAds() {
+    public List<Ad> getAds() {
         return automobiles;
     }
 
-    public void setAds(List<Automobile> automobiles) {
+    public void setAds(List<Ad> automobiles) {
         this.automobiles = automobiles;
     }
 
-    public List<Automobile> getAutomobiles() {
+    public List<Ad> getAutomobiles() {
         return automobiles;
     }
 
-    public void setAutomobiles(List<Automobile> automobiles) {
+    public void setAutomobiles(List<Ad> automobiles) {
         this.automobiles = automobiles;
     }
 

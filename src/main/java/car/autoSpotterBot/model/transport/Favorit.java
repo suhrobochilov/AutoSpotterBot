@@ -15,7 +15,7 @@ public class Favorit {
 
     @ManyToOne
     @JoinColumn(name = "transport_id")
-    private Transport transport;
+    private Ad transport;
     public Long getId() {
         return id;
     }
@@ -32,11 +32,11 @@ public class Favorit {
         this.user = user;
     }
 
-    public Transport getTransport() {
+    public Ad getTransport() {
         return transport;
     }
 
-    public void setTransport(Transport anzeige) {
+    public void setTransport(Ad anzeige) {
         this.transport = anzeige;
     }
 }

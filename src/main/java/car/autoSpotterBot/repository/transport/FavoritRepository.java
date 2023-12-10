@@ -9,4 +9,6 @@ public interface FavoritRepository extends JpaRepository<Favorit, Long> {
     void deleteByUserIdAndTransportId(Long id, Long adId);
 
     List<Favorit> findByUserId(Long id);
+
+    List<Favorit> findByTransportId(Long id);
 }

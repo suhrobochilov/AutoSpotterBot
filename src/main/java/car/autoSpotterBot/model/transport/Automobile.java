@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 
 
 @Entity
-public class Automobile extends Transport{
+public class Automobile extends Ad {
 
 }
 

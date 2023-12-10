@@ -1,4 +1,4 @@
-package car.autoSpotterBot.autoUtil;
+package car.autoSpotterBot.util.transportUtils;
 
 public class MessageText {
     public static final String autoAdExample = "E'lonni to'g'ri joylash uchun ko'rsatmaga e'tibor bering!\n" +
@@ -14,4 +14,7 @@ public class MessageText {
             "◾\uFE0FManzil\n" +
             "◼\uFE0F  Narxi\n" +
             "\uD83D\uDD32 Telno'mer";
+    public static final String startMessage = "Assalomu Alaykum Botga xush kelibsiz";
+    public static final String placeAdMessage = "Qaysi bo'limda e'lon bermoqchisiz?";
+    public static final String searchAdMessage = "Qaysi bo'limda qidirmoqchisiz?";
 }

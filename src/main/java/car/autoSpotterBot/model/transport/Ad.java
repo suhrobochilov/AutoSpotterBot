@@ -8,8 +8,8 @@ import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
-@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS) // TPC Strategy
-public abstract class Transport {
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE) // TPC Strategy
+public abstract class Ad {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -18,11 +18,9 @@ public abstract class Transport {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private BotUser user;
-
     @ManyToOne
     @JoinColumn(name = "stadt_id")
     private Standort standort;
-
     @Column(length = 5000)
     private List<String> imageUrl;
 
@@ -31,6 +29,9 @@ public abstract class Transport {
 
     @Column(length = 5000)
     private String videoUrl;
+
+    protected Ad() {
+    }
 
     public Long getId() {
         return id;

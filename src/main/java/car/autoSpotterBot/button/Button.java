@@ -15,48 +15,32 @@ import java.util.List;
 @Component
 @Service
 public class Button {
-    public InlineKeyboardMarkup buildInlKeyboardForCities(long userId, List<String> buttons1, List<String> buttons2,
-                                                          List<String> buttons3, List<String> buttons4, List<String> buttons5) {
+    public InlineKeyboardMarkup mainMenu() {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
-        List<List<InlineKeyboardButton>> inlineButtons = new ArrayList<>();
-        inlineButton(buttons1, inlineButtons);
-        inlineButton(buttons2, inlineButtons);
-        inlineButton(buttons3, inlineButtons);
-        inlineButton(buttons4, inlineButtons);
-        inlineButton(buttons5, inlineButtons);
-        inlineKeyboardMarkup.setKeyboard(inlineButtons);
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        List<InlineKeyboardButton> row1 = new ArrayList<>();
+        List<InlineKeyboardButton> row2 = new ArrayList<>();
+        InlineKeyboardButton transport = new InlineKeyboardButton();
+        InlineKeyboardButton realEstate = new InlineKeyboardButton();
+        InlineKeyboardButton electronics = new InlineKeyboardButton();
+        InlineKeyboardButton services = new InlineKeyboardButton();
+        transport.setText(ButtonConstant.transport);
+        transport.setCallbackData(ButtonConstant.transport);
+        realEstate.setText(ButtonConstant.realEstate);
+        realEstate.setCallbackData(ButtonConstant.realEstate);
+        electronics.setText(ButtonConstant.electronics);
+        electronics.setCallbackData(ButtonConstant.electronics);
+        services.setText(ButtonConstant.service);
+        services.setCallbackData(ButtonConstant.service);
+        row1.add(transport);
+        row1.add(realEstate);
+        row2.add(electronics);
+        row2.add(services);
+        rows.add(row1);
+        rows.add(row2);
+
+        inlineKeyboardMarkup.setKeyboard(rows);
         return inlineKeyboardMarkup;
-    }
-
-    private void inlineButton(List<String> buttons1, List<List<InlineKeyboardButton>> inlineButtons) {
-        List<InlineKeyboardButton> inlineKeyboardButtonsRow1 = new ArrayList<>();
-        for (String button : buttons1) {
-            InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
-            inlineKeyboardButton.setText(button);
-            inlineKeyboardButton.setCallbackData(button);
-            inlineKeyboardButtonsRow1.add(inlineKeyboardButton);
-        }
-        inlineButtons.add(inlineKeyboardButtonsRow1);
-    }
-
-    public ReplyKeyboardMarkup mainMenu() {
-        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
-        List<KeyboardRow> keyboard = new ArrayList<>();
-        replyKeyboardMarkup.setResizeKeyboard(true);
-        KeyboardRow row1 = new KeyboardRow();
-        KeyboardRow row2 = new KeyboardRow();
-
-        row1.add(new KeyboardButton(MainButtonConstants.transport));
-        row1.add(new KeyboardButton(MainButtonConstants.realEstate));
-
-        row2.add(new KeyboardButton(MainButtonConstants.electronics));
-        row2.add(new KeyboardButton(MainButtonConstants.service));
-
-        keyboard.add(row1);
-        keyboard.add(row2);
-
-        replyKeyboardMarkup.setKeyboard(keyboard);
-        return replyKeyboardMarkup;
     }
 
     public InlineKeyboardMarkup inlKeyboardConfirmation() {
@@ -67,32 +51,12 @@ public class Button {
         InlineKeyboardButton morePhotosBtn = new InlineKeyboardButton();
         InlineKeyboardButton favoriteBtn = new InlineKeyboardButton();
         morePhotosBtn.setText("Tasdiqlash");
-        morePhotosBtn.setCallbackData("Tasdiqlash");
+        morePhotosBtn.setCallbackData(ButtonConstant.confirm);
         favoriteBtn.setText("Bekor qilish");
-        favoriteBtn.setCallbackData("Bekor qilish");
+        favoriteBtn.setCallbackData(ButtonConstant.cancel);
 
         row.add(morePhotosBtn);
         row.add(favoriteBtn);
-        rows.add(row);
-
-        inlineKeyboardMarkup.setKeyboard(rows);
-        return inlineKeyboardMarkup;
-    }
-
-    public InlineKeyboardMarkup inlKeyboardSection() {
-        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
-        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-        List<InlineKeyboardButton> row = new ArrayList<>();
-
-        InlineKeyboardButton placeAutoAd = new InlineKeyboardButton();
-        InlineKeyboardButton search = new InlineKeyboardButton();
-        placeAutoAd.setText(TransButtonConstant.placeAutoAd);
-        placeAutoAd.setCallbackData(TransButtonConstant.placeAutoAd);
-        search.setText(TransButtonConstant.autoSearch);
-        search.setCallbackData(TransButtonConstant.autoSearch);
-
-        row.add(placeAutoAd);
-        row.add(search);
         rows.add(row);
 
         inlineKeyboardMarkup.setKeyboard(rows);
@@ -103,25 +67,25 @@ public class Button {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         List<InlineKeyboardButton> row1 = new ArrayList<>();
-         List<InlineKeyboardButton> row2 = new ArrayList<>();
+        List<InlineKeyboardButton> row2 = new ArrayList<>();
         InlineKeyboardButton deleteAd = new InlineKeyboardButton();
         InlineKeyboardButton next = new InlineKeyboardButton();
         InlineKeyboardButton previous = new InlineKeyboardButton();
-         InlineKeyboardButton video = new InlineKeyboardButton();
+        InlineKeyboardButton video = new InlineKeyboardButton();
         deleteAd.setText("E'lonni o'chirish \uD83D\uDD34");
-        deleteAd.setCallbackData(TransButtonConstant.deleteAd + "_" + adId);
+        deleteAd.setCallbackData(ButtonConstant.deleteAd + "_" + adId);
         next.setText("Keyingi rasm ▶\uFE0F");
-        next.setCallbackData(TransButtonConstant.nextPhoto + adId + "_" + nextIndex);
+        next.setCallbackData(ButtonConstant.nextPhoto + adId + "_" + nextIndex);
         previous.setText("◀\uFE0F Oldingi rasm");
-        previous.setCallbackData(TransButtonConstant.previousPhoto + adId + "_" + nextIndex);
+        previous.setCallbackData(ButtonConstant.previousPhoto + adId + "_" + nextIndex);
         video.setText("Video \uD83D\uDCF9");
-        video.setCallbackData(TransButtonConstant.video + adId);
+        video.setCallbackData(ButtonConstant.video + adId);
         row1.add(previous);
-         row1.add(next);
-         row2.add(video);
+        row1.add(next);
+        row2.add(video);
         row2.add(deleteAd);
         rows.add(row1);
-         rows.add(row2);
+        rows.add(row2);
 
         inlineKeyboardMarkup.setKeyboard(rows);
         return inlineKeyboardMarkup;
@@ -137,13 +101,13 @@ public class Button {
         InlineKeyboardButton favorite = new InlineKeyboardButton();
         InlineKeyboardButton video = new InlineKeyboardButton();
         next.setText("Keyingi rasm ▶\uFE0F");
-        next.setCallbackData(TransButtonConstant.nextPhoto + adID + "_" + nextIndex);
+        next.setCallbackData(ButtonConstant.nextPhoto + adID + "_" + nextIndex);
         previous.setText("◀\uFE0F Oldingi rasm");
-        previous.setCallbackData(TransButtonConstant.previousPhoto + adID + "_" + nextIndex);
+        previous.setCallbackData(ButtonConstant.previousPhoto + adID + "_" + nextIndex);
         video.setText("Video \uD83D\uDCF9");
-        video.setCallbackData(TransButtonConstant.video + adID);
+        video.setCallbackData(ButtonConstant.video + adID);
         favorite.setText("Favoritga qo'shish");
-        favorite.setCallbackData(TransButtonConstant.favorite + adID);
+        favorite.setCallbackData(ButtonConstant.favorite + adID);
 
         row1.add(previous);
         row1.add(next);
@@ -166,13 +130,13 @@ public class Button {
         InlineKeyboardButton favorite = new InlineKeyboardButton();
         InlineKeyboardButton video = new InlineKeyboardButton();
         next.setText("Keyingi rasm ▶\uFE0F");
-        next.setCallbackData(TransButtonConstant.nextPhoto + adID + "_" + nextIndex);
+        next.setCallbackData(ButtonConstant.nextPhoto + adID + "_" + nextIndex);
         previous.setText("◀\uFE0F Oldingi rasm");
-        previous.setCallbackData(TransButtonConstant.previousPhoto + adID + "_" + nextIndex);
+        previous.setCallbackData(ButtonConstant.previousPhoto + adID + "_" + nextIndex);
         video.setText("Video \uD83D\uDCF9");
-        video.setCallbackData(TransButtonConstant.video + adID);
+        video.setCallbackData(ButtonConstant.video + adID);
         favorite.setText("Favoritga qo'shildi ☑\uFE0F");
-        favorite.setCallbackData(TransButtonConstant.favorite + adID);
+        favorite.setCallbackData(ButtonConstant.favorite + adID);
 
         row1.add(previous);
         row1.add(next);
@@ -185,50 +149,118 @@ public class Button {
         return inlineKeyboardMarkup;
     }
 
-    public ReplyKeyboardMarkup transportMenu() {
-        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
-        List<KeyboardRow> keyboard = new ArrayList<>();
-        replyKeyboardMarkup.setResizeKeyboard(true);
-        KeyboardRow row1 = new KeyboardRow();
-        KeyboardRow row2 = new KeyboardRow();
-        KeyboardRow row3 = new KeyboardRow();
+    public InlineKeyboardMarkup inlKeyboardMyFavorite(Long adId, Integer nextIndex) {
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        List<InlineKeyboardButton> row1 = new ArrayList<>();
+        List<InlineKeyboardButton> row2 = new ArrayList<>();
+        InlineKeyboardButton deleteAd = new InlineKeyboardButton();
+        InlineKeyboardButton next = new InlineKeyboardButton();
+        InlineKeyboardButton previous = new InlineKeyboardButton();
+        InlineKeyboardButton video = new InlineKeyboardButton();
+        deleteAd.setText("Favoritdan o'chirish \uD83D\uDD34");
+        deleteAd.setCallbackData(ButtonConstant.deleteAdFromFavorite + "_" + adId);
+        next.setText("Keyingi rasm ▶\uFE0F");
+        next.setCallbackData(ButtonConstant.nextPhoto + adId + "_" + nextIndex);
+        previous.setText("◀\uFE0F Oldingi rasm");
+        previous.setCallbackData(ButtonConstant.previousPhoto + adId + "_" + nextIndex);
+        video.setText("Video \uD83D\uDCF9");
+        video.setCallbackData(ButtonConstant.video + adId);
+        row1.add(previous);
+        row1.add(next);
+        row2.add(video);
+        row2.add(deleteAd);
+        rows.add(row1);
+        rows.add(row2);
 
-        row1.add(new KeyboardButton(TransButtonConstant.automobile));
-        row1.add(new KeyboardButton(TransButtonConstant.truck));
-
-        row2.add(new KeyboardButton(TransButtonConstant.agroTech));
-        row2.add(new KeyboardButton(TransButtonConstant.otherTrans));
-        row3.add(new KeyboardButton(TransButtonConstant.spareParts));
-        row3.add(new KeyboardButton(TransButtonConstant.mainMenu));
-        keyboard.add(row1);
-        keyboard.add(row2);
-        keyboard.add(row3);
-
-        replyKeyboardMarkup.setKeyboard(keyboard);
-        return replyKeyboardMarkup;
+        inlineKeyboardMarkup.setKeyboard(rows);
+        return inlineKeyboardMarkup;
     }
 
-    public ReplyKeyboardMarkup autoMenu() {
-        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
-        List<KeyboardRow> keyboard = new ArrayList<>();
-        replyKeyboardMarkup.setResizeKeyboard(true);
-        KeyboardRow row1 = new KeyboardRow();
-        KeyboardRow row2 = new KeyboardRow();
-        KeyboardRow row3 = new KeyboardRow();
+    public InlineKeyboardMarkup transMenu() {
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 
-        row1.add(new KeyboardButton(TransButtonConstant.placeAutoAd));
-        row1.add(new KeyboardButton(TransButtonConstant.mayAutoAds));
+        List<InlineKeyboardButton> row1 = new ArrayList<>();
+        List<InlineKeyboardButton> row2 = new ArrayList<>();
+        List<InlineKeyboardButton> row3 = new ArrayList<>();
 
-        row2.add(new KeyboardButton(TransButtonConstant.autoSearch));
-        row2.add(new KeyboardButton(TransButtonConstant.autoFavorite));
-        row3.add(new KeyboardButton(TransButtonConstant.backInAutoAd));
+        InlineKeyboardButton automobile = new InlineKeyboardButton();
+        InlineKeyboardButton truck = new InlineKeyboardButton();
+        InlineKeyboardButton agroTech = new InlineKeyboardButton();
+        InlineKeyboardButton otherTrans = new InlineKeyboardButton();
+        InlineKeyboardButton spareParts = new InlineKeyboardButton();
+        InlineKeyboardButton mainMenu = new InlineKeyboardButton();
 
-        keyboard.add(row1);
-        keyboard.add(row2);
-        keyboard.add(row3);
+        automobile.setText(ButtonConstant.automobile);
+        automobile.setCallbackData(ButtonConstant.automobile);
+        truck.setText(ButtonConstant.truck);
+        truck.setCallbackData(ButtonConstant.truck);
+        agroTech.setText(ButtonConstant.agroTech);
+        agroTech.setCallbackData(ButtonConstant.agroTech);
+        otherTrans.setText(ButtonConstant.otherTrans);
+        otherTrans.setCallbackData(ButtonConstant.otherTrans);
+        spareParts.setText(ButtonConstant.spareParts);
+        spareParts.setCallbackData(ButtonConstant.spareParts);
+        mainMenu.setText(ButtonConstant.mainMenu);
+        mainMenu.setCallbackData(ButtonConstant.mainMenu);
+        row1.add(automobile);
+        row1.add(truck);
+        row2.add(otherTrans);
+        row2.add(spareParts);
+        row3.add(mainMenu);
+        rows.add(row1);
+        rows.add(row2);
+        rows.add(row3);
 
-        replyKeyboardMarkup.setKeyboard(keyboard);
-        return replyKeyboardMarkup;
+        inlineKeyboardMarkup.setKeyboard(rows);
+        return inlineKeyboardMarkup;
+    }
+    public InlineKeyboardMarkup realEstateMenu() {
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        List<InlineKeyboardButton> row1 = new ArrayList<>();
+        List<InlineKeyboardButton> row2 = new ArrayList<>();
+        List<InlineKeyboardButton> row3 = new ArrayList<>();
+        List<InlineKeyboardButton> row4 = new ArrayList<>();
+
+        InlineKeyboardButton apartment = new InlineKeyboardButton();
+        InlineKeyboardButton buildingLot = new InlineKeyboardButton();
+        InlineKeyboardButton businessPremise = new InlineKeyboardButton();
+        InlineKeyboardButton house = new InlineKeyboardButton();
+        InlineKeyboardButton parkingSpaces = new InlineKeyboardButton();
+        InlineKeyboardButton rentalHome = new InlineKeyboardButton();
+        InlineKeyboardButton mainMenu = new InlineKeyboardButton();
+
+        apartment.setText(ButtonConstant.apartment);
+        apartment.setCallbackData(ButtonConstant.apartment);
+        buildingLot.setText(ButtonConstant.buildingLot);
+        buildingLot.setCallbackData(ButtonConstant.buildingLot);
+        businessPremise.setText(ButtonConstant.businessPremise);
+        businessPremise.setCallbackData(ButtonConstant.businessPremise);
+        house.setText(ButtonConstant.house);
+        house.setCallbackData(ButtonConstant.house);
+        parkingSpaces.setText(ButtonConstant.parkingSpace);
+        parkingSpaces.setCallbackData(ButtonConstant.parkingSpace);
+        rentalHome.setText(ButtonConstant.rentalHome);
+        rentalHome.setCallbackData(ButtonConstant.rentalHome);
+        mainMenu.setText(ButtonConstant.mainMenu);
+        mainMenu.setCallbackData(ButtonConstant.mainMenu);
+        row1.add(apartment);
+        row1.add(house);
+        row2.add(businessPremise);
+        row2.add(buildingLot);
+        row3.add(rentalHome);
+        row3.add(parkingSpaces);
+        row4.add(mainMenu);
+        rows.add(row1);
+        rows.add(row2);
+        rows.add(row3);
+        rows.add(row4);
+
+        inlineKeyboardMarkup.setKeyboard(rows);
+        return inlineKeyboardMarkup;
     }
 
     public ReplyKeyboardMarkup nextPage() {
@@ -237,30 +269,52 @@ public class Button {
         replyKeyboardMarkup.setResizeKeyboard(true);
         KeyboardRow row1 = new KeyboardRow();
         KeyboardRow row2 = new KeyboardRow();
-        row1.add(new KeyboardButton("Oldingisi"));
-        row1.add(new KeyboardButton("Keyingisi"));
-        row2.add(new KeyboardButton("Ortga ⬅\uFE0F"));
+        row1.add(new KeyboardButton(ButtonConstant.previousPage));
+        row1.add(new KeyboardButton(ButtonConstant.nextPage));
+        row2.add(new KeyboardButton(ButtonConstant.back));
+
         keyboard.add(row1);
         keyboard.add(row2);
+
         replyKeyboardMarkup.setKeyboard(keyboard);
         return replyKeyboardMarkup;
     }
 
-    public InlineKeyboardMarkup buildInlKeyboardForSearch(Long chatId, List<String> citiesRow1, List<String> citiesRow2, List<String> citiesRow3,
-                                                          List<String> citiesRow4, List<String> citiesRow5, List<String> allAutoAd) {
-        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
-        List<List<InlineKeyboardButton>> inlineButtons = new ArrayList<>();
+    public ReplyKeyboardMarkup startMenu() {
+        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        List<KeyboardRow> keyboard = new ArrayList<>();
+        replyKeyboardMarkup.setResizeKeyboard(true);
+        KeyboardRow row1 = new KeyboardRow();
+        KeyboardRow row2 = new KeyboardRow();
+        row1.add(new KeyboardButton(ButtonConstant.placeAd));
+        row1.add(new KeyboardButton(ButtonConstant.searchAd));
+        row2.add(new KeyboardButton(ButtonConstant.myAds));
+        row2.add(new KeyboardButton(ButtonConstant.myFavorite));
 
-        inlineButton(citiesRow1, inlineButtons);
-        inlineButton(citiesRow2, inlineButtons);
-        inlineButton(citiesRow3, inlineButtons);
-        inlineButton(citiesRow4, inlineButtons);
-        inlineButton(citiesRow5, inlineButtons);
-        inlineButton(allAutoAd, inlineButtons);
+        keyboard.add(row1);
+        keyboard.add(row2);
 
-        inlineKeyboardMarkup.setKeyboard(inlineButtons);
+        replyKeyboardMarkup.setKeyboard(keyboard);
+        return replyKeyboardMarkup;
+    }
 
-        return inlineKeyboardMarkup;
+    public InlineKeyboardMarkup cities() {
+        InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+
+        for (List<String> cityRow : getCities()) {
+            List<InlineKeyboardButton> rowInline = new ArrayList<>();
+            for (String city : cityRow) {
+                InlineKeyboardButton button = new InlineKeyboardButton();
+                button.setText(city);
+                button.setCallbackData(city);
+                rowInline.add(button);
+            }
+            rowsInline.add(rowInline);
+        }
+
+        markupInline.setKeyboard(rowsInline);
+        return markupInline;
     }
 
     public List<List<String>> getCities() {
@@ -269,8 +323,9 @@ public class Button {
         List<String> bundeslanderRow3 = Arrays.asList("Namangan", "Samarqand", "Xorazm");
         List<String> bundeslanderRow4 = Arrays.asList("Qashqadaryo", "Surxandaryo");
         List<String> bundeslanderRow5 = Arrays.asList("Qoraqalpog'iston", "Navoi");
+        List<String> bundeslanderRow6 = List.of(ButtonConstant.backInAutoAd);
 
-        return Arrays.asList(bundeslanderRow1, bundeslanderRow2, bundeslanderRow3, bundeslanderRow4, bundeslanderRow5);
+        return Arrays.asList(bundeslanderRow1, bundeslanderRow2, bundeslanderRow3, bundeslanderRow4, bundeslanderRow5, bundeslanderRow6);
     }
 
 
