@@ -93,6 +93,7 @@ public class RealEstateInterpreter {
             long chatId = update.getCallbackQuery().getFrom().getId();
             int messageId = update.getCallbackQuery().getMessage().getMessageId();
             String text = update.getCallbackQuery().getData();
+            log.info("State: " + userStateRealEstate.getUserStatusRealEstate(chatId) + " " + "text: " + text);
             if (userStateRealEstate.getUserStatusRealEstate(chatId) != null &&
                     userStateRealEstate.getUserStatusRealEstate(chatId).equals(APARTMENT)) {
                 apartmentInterpreter.interpreter(chatId, messageId, text, null, null);
@@ -155,5 +156,6 @@ public class RealEstateInterpreter {
         } else {
             botCallback.editMessage(chatId, messageId, "Qaysi viloyatda qidirmoqchisiz?", newKeyboard);
         }
+        userStateRealEstate.setUserStatusRealEstate(chatId,null);
     }
 }

@@ -209,28 +209,28 @@ public class TransportService {
     }
 
     private <T extends Ad> void displayAdsAtSearch(Long chatId, List<T> ads) {
-        int currentIndex = userPageState.getOrDefault(chatId, ads.size());
-        int startIndex = Math.max(0, currentIndex - PAGE_SIZE);
-        if (ads.size() > 10) {
-            for (int i = startIndex; i < currentIndex; i++) {
-                T ad = ads.get(i);
-                getAd(chatId, ad);
-            }
-            botCallback.sendMessageWithReplyKeyboard(chatId, "Keyingi e'lonlarni ko'rish uchun \uD83D\uDC47", button.nextPage());
-        } else {
-            for (T ad : ads) {
-                getAd(chatId, ad);
-            }
-            botCallback.sendMessageWithReplyKeyboard(chatId, "Keyingi e'lonlarni ko'rish uchun \uD83D\uDC47", button.nextPage());
-        }
-        if (startIndex == 0) {
-            int endIndex = Math.max(0, currentIndex + PAGE_SIZE);
-            userPageState.put(chatId, endIndex);
-        } else {
-            userPageState.put(chatId, startIndex);
+        // Bestimme den aktuellen Index basierend auf der aktuellen Seite, die der Benutzer sieht.
+        int currentPage = userPageState.getOrDefault(chatId, 1);
+        int startIndex = (currentPage - 1) * PAGE_SIZE;
+        int endIndex = Math.min(startIndex + PAGE_SIZE, ads.size());
+
+        for (int i = startIndex; i < endIndex; i++) {
+            T ad = ads.get(i);
+            getAd(chatId, ad);
         }
 
+        int totalAds = ads.size();
+        int totalPages = (totalAds + PAGE_SIZE - 1) / PAGE_SIZE;
+
+        InlineKeyboardMarkup inlineKeyboard = button.createInlineKeyboardForPages(currentPage, totalPages);
+
+        if (!ads.isEmpty()) {
+            botCallback.sendMessageWithInlKeyboard(chatId, "Keyingi e'lonlarni ko'rish uchun \uD83D\uDC47", inlineKeyboard);
+        } else {
+            botCallback.sendMessageWithInlKeyboard(chatId, "Birorta ham e'lon topilmadi \uD83D\uDE45\u200D♂\uFE0F", null);
+        }
     }
+
 
     private <T extends Ad> void getAd(Long chatId, T ad) {
         List<String> photoUrls = ad.getImageUrl();
@@ -290,29 +290,37 @@ public class TransportService {
     }
 
     public void displayNextPage(Long chatId, Class<? extends Ad> adClass) {
-        List<? extends Ad> ads;
+        List<? extends Ad> ads = getAdsByClass(adClass);
+        int totalAds = ads.size();
+        int totalPages = (int) Math.ceil((double) totalAds / PAGE_SIZE);
+        int currentPage = userPageState.getOrDefault(chatId, 1);
+        // Berechnen Sie die zu zeigenden Anzeigen basierend auf der aktuellen Seite
+        int startIndex = (currentPage - 1) * PAGE_SIZE;
+        int endIndex = Math.min(startIndex + PAGE_SIZE, totalAds);
+        List<? extends Ad> adsToShow = ads.subList(startIndex, endIndex);
 
-        if (adClass.equals(Automobile.class)) {
-            ads = automobileService.findAll();
-        } else if (adClass.equals(Truck.class)) {
-            ads = truckService.findAll();
-        } else if (adClass.equals(AgroTechnology.class)) {
-            ads = agroTechService.findAll();
-        } else if (adClass.equals(OtherTransport.class)) {
-            ads = otherTransService.findAll();
-        } else if (adClass.equals(SpareParts.class)) {
-            ads = sparePartsService.findAll();
-        } else {
-            ads = Collections.emptyList();
-        }
-        int currentIndex = userPageState.getOrDefault(chatId, ads.size());
-        if (currentIndex > 0) {
-            displayAdsAtSearch(chatId, ads);
-            botCallback.sendMessageWithReplyKeyboard(chatId, "Keyingi e'lonlarni ko'rish uchun \uD83D\uDC47", button.nextPage());
-        } else {
-            botCallback.sendMessageWithInlKeyboard(chatId, "Jo'q boshqa e'lon-pelon! \uD83D\uDE04", null);
-        }
+        log.info("totalPages: " + totalPages + " currentPage: " + currentPage + " startIndex: " + startIndex + " endInex: " + endIndex);
+        displayAdsAtSearch(chatId, adsToShow);
+
+        // InlineKeyboardMarkup inlineKeyboard = button.createInlineKeyboardForPages(currentPage, totalPages);
+        //  botCallback.sendMessageWithInlKeyboard(chatId, "Wählen Sie eine Seite:", inlineKeyboard);
     }
+
+    private List<? extends Ad> getAdsByClass(Class<? extends Ad> adClass) {
+        if (adClass.equals(Automobile.class)) {
+            return automobileService.findAll();
+        } else if (adClass.equals(Truck.class)) {
+            return truckService.findAll();
+        } else if (adClass.equals(AgroTechnology.class)) {
+            return agroTechService.findAll();
+        } else if (adClass.equals(OtherTransport.class)) {
+            return otherTransService.findAll();
+        } else if (adClass.equals(SpareParts.class)) {
+            return sparePartsService.findAll();
+        }
+        return Collections.emptyList();
+    }
+
 
     public void displayPreviousPage(Long chatId, Class<? extends Ad> adClass) {
         List<? extends Ad> ads;

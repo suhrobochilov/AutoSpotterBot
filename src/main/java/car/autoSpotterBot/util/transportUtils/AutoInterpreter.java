@@ -40,12 +40,12 @@ public class AutoInterpreter {
         Automobile currentAutomobile = currentAdAuto.getOrDefault(chatId, new Automobile());
         if (text != null) {
             if (text.equals(ButtonConstant.backInAutoAd)) {
-                log.info("State: " + userStateManager.getUserSubStatus(chatId));
+                log.info("AutoState: " + userStateManager.getUserSubStatus(chatId));
                 InlineKeyboardMarkup newButton = button.transMenu();
                 checkUserSubStatus(chatId,messageId,newButton);
             }
-            if (text.equals(ButtonConstant.nextPage)) {
-                botCallback.deleteMessage(chatId, messageId);
+            if (text.startsWith("page")) {
+                log.info("text in AutoClass: " + text);
                 transportService.displayNextPage(chatId, Automobile.class);
                 userStateManager.setUserSubStatus(chatId, PLACE_AD);
             }

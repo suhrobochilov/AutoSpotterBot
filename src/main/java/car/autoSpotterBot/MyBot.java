@@ -6,10 +6,10 @@ import car.autoSpotterBot.configuration.BotConfig;
 import car.autoSpotterBot.model.BotUser;
 import car.autoSpotterBot.service.AdService;
 import car.autoSpotterBot.service.BotUserService;
-import car.autoSpotterBot.service.realEstate.RealEstateService;
 import car.autoSpotterBot.service.transport.TransportService;
 import car.autoSpotterBot.state.UserStateConstants;
 import car.autoSpotterBot.state.UserStateManager;
+import car.autoSpotterBot.state.UserStateRealEstate;
 import car.autoSpotterBot.state.UserStateTransport;
 import car.autoSpotterBot.util.realEstateUtils.RealEstateInterpreter;
 import car.autoSpotterBot.util.transportUtils.BotCallback;
@@ -52,6 +52,7 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
     private final BotUserService userService;
     private final UserStateManager userStateManager;
     private final UserStateTransport userStateTransport;
+    private final UserStateRealEstate userStateRealEstate;
     private final BotConfig botConfig;
     private final Map<Long, Integer> idsForPLace = new ConcurrentHashMap<>();
     private final Map<Long, Integer> idsForSearch = new ConcurrentHashMap<>();
@@ -62,11 +63,12 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
 
-    public MyBot(BotUserService userService, Button buttonService, UserStateManager userStateManager, UserStateTransport userStateTransport, BotConfig botConfig) {
+    public MyBot(BotUserService userService, Button buttonService, UserStateManager userStateManager, UserStateTransport userStateTransport, UserStateRealEstate userStateRealEstate, BotConfig botConfig) {
         this.userService = userService;
         this.button = buttonService;
         this.userStateManager = userStateManager;
         this.userStateTransport = userStateTransport;
+        this.userStateRealEstate = userStateRealEstate;
         this.botConfig = botConfig;
     }
     @Autowired
@@ -126,6 +128,7 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
                 sendMessageWithReplyKeyboard(chatId, "Asosiy menu", button.startMenu());
                 userStateManager.setUserMainStatus(chatId, START);
                 userStateTransport.setUserStatusTransport(chatId, null);
+                userStateRealEstate.setUserStatusRealEstate(chatId, null);
                 userStateManager.setUserSubStatus(chatId, null);
             }
             if (text.equals(ButtonConstant.placeAd)) {

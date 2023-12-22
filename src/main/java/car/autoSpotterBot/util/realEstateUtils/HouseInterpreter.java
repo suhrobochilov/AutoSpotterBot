@@ -44,7 +44,7 @@ public class HouseInterpreter {
         if (text != null) {
             if (text.equals(ButtonConstant.backInAutoAd)) {
                 log.info("State: " + userStateManager.getUserSubStatus(chatId));
-                InlineKeyboardMarkup newButton = button.transMenu();
+                InlineKeyboardMarkup newButton = button.realEstateMenu();
                 checkUserSubStatus(chatId,messageId,newButton);
             }
             if (text.equals(ButtonConstant.nextPage)) {

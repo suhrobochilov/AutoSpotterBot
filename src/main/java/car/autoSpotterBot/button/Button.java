@@ -279,6 +279,49 @@ public class Button {
         replyKeyboardMarkup.setKeyboard(keyboard);
         return replyKeyboardMarkup;
     }
+    public InlineKeyboardMarkup createInlineKeyboardForPages(int currentPage, int totalPages) {
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        // Erstellen Sie die Zahlenreihe für die Seiten
+        List<InlineKeyboardButton> pageButtons = new ArrayList<>();
+        for (int i = 1; i <= totalPages; i++) {
+            InlineKeyboardButton pageButton = new InlineKeyboardButton();
+            pageButton.setText(Integer.toString(i));
+            pageButton.setCallbackData("page_" + i); // Der Callback sollte die Seitennummer enthalten
+            pageButtons.add(pageButton);
+
+            // Fügen Sie nach jeder Reihe von 5 Buttons eine neue Reihe hinzu
+            if (i % 5 == 0 || i == totalPages) {
+                rows.add(pageButtons);
+                pageButtons = new ArrayList<>();
+            }
+        }
+
+        // Füge Navigationsbuttons hinzu, wenn notwendig
+        if (totalPages > 1) {
+            List<InlineKeyboardButton> navigationButtons = new ArrayList<>();
+
+            InlineKeyboardButton previousButton = new InlineKeyboardButton();
+            previousButton.setText("⬅️");
+            // Fügen Sie Logik hinzu, um den Callback für den vorherigen Button zu bestimmen
+            previousButton.setCallbackData("page_" + Math.max(1, currentPage - 1));
+            navigationButtons.add(previousButton);
+
+            InlineKeyboardButton nextButton = new InlineKeyboardButton();
+            nextButton.setText("➡️");
+            // Fügen Sie Logik hinzu, um den Callback für den nächsten Button zu bestimmen
+            nextButton.setCallbackData("page_" + Math.min(totalPages, currentPage + 1));
+            navigationButtons.add(nextButton);
+
+            rows.add(navigationButtons);
+        }
+
+        inlineKeyboardMarkup.setKeyboard(rows);
+        return inlineKeyboardMarkup;
+    }
+
+
 
     public ReplyKeyboardMarkup startMenu() {
         ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
