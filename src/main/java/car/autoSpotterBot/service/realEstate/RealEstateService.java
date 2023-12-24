@@ -2,10 +2,10 @@ package car.autoSpotterBot.service.realEstate;
 
 import car.autoSpotterBot.button.Button;
 import car.autoSpotterBot.button.ButtonConstant;
+import car.autoSpotterBot.model.Ad;
 import car.autoSpotterBot.model.BotUser;
 import car.autoSpotterBot.model.Standort;
 import car.autoSpotterBot.model.realeState.*;
-import car.autoSpotterBot.model.transport.*;
 import car.autoSpotterBot.service.AdService;
 import car.autoSpotterBot.service.BotUserService;
 import car.autoSpotterBot.service.StandortService;

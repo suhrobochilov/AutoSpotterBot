@@ -1,7 +1,6 @@
 package car.autoSpotterBot.model;
 
 import car.autoSpotterBot.model.transport.Favorit;
-import car.autoSpotterBot.model.transport.Ad;
 import jakarta.persistence.*;
 
 import java.util.List;

@@ -2,6 +2,7 @@ package car.autoSpotterBot.service.transport;
 
 import car.autoSpotterBot.button.Button;
 import car.autoSpotterBot.button.ButtonConstant;
+import car.autoSpotterBot.model.Ad;
 import car.autoSpotterBot.model.BotUser;
 import car.autoSpotterBot.model.Standort;
 import car.autoSpotterBot.model.transport.*;
@@ -209,21 +210,17 @@ public class TransportService {
     }
 
     private <T extends Ad> void displayAdsAtSearch(Long chatId, List<T> ads) {
-        // Bestimme den aktuellen Index basierend auf der aktuellen Seite, die der Benutzer sieht.
+        Collections.reverse(ads);
         int currentPage = userPageState.getOrDefault(chatId, 1);
         int startIndex = (currentPage - 1) * PAGE_SIZE;
         int endIndex = Math.min(startIndex + PAGE_SIZE, ads.size());
-
         for (int i = startIndex; i < endIndex; i++) {
             T ad = ads.get(i);
             getAd(chatId, ad);
         }
-
         int totalAds = ads.size();
         int totalPages = (totalAds + PAGE_SIZE - 1) / PAGE_SIZE;
-
         InlineKeyboardMarkup inlineKeyboard = button.createInlineKeyboardForPages(currentPage, totalPages);
-
         if (!ads.isEmpty()) {
             botCallback.sendMessageWithInlKeyboard(chatId, "Keyingi e'lonlarni ko'rish uchun \uD83D\uDC47", inlineKeyboard);
         } else {
@@ -231,17 +228,24 @@ public class TransportService {
         }
     }
 
-
     private <T extends Ad> void getAd(Long chatId, T ad) {
-        List<String> photoUrls = ad.getImageUrl();
-        String photoUrl = ad.getImageUrl().isEmpty() ? null : ad.getImageUrl().get(0);
-        String description = ad.getDescription();
-        if (photoUrls != null && !photoUrls.isEmpty()) {
-            botCallback.sendPhotoWithInlKeyboard(chatId, description, photoUrl, button.inlKeyboardForAd(ad.getId(), null));
+        if (ad.getImageUrl() != null){
+            List<String> photoUrls = ad.getImageUrl();
+            String photoUrl = ad.getImageUrl().isEmpty() ? null : ad.getImageUrl().get(0);
+            String description = ad.getDescription();
+            if (photoUrls != null && !photoUrls.isEmpty()) {
+                botCallback.sendPhotoWithInlKeyboard(chatId, "E'lon id raqami: " + ad.getId() + "\n" + description, photoUrl, button.inlKeyboardForAd(ad.getId(), null));
+            }
+        } else if (ad.getVideoUrl() != null) {
+            String videoUrl = ad.getVideoUrl();
+            String description = ad.getDescription();
+            botCallback.sendVideoWithInlKeyboard(chatId, "E'lon id raqami: " + ad.getId() + "\n" + description, videoUrl, button.inlKeyboardForAd(ad.getId(), null));
+        }else {
+            adService.deleteById(ad.getId());
         }
     }
 
-    public void finalizeAndSaveAd(Long chatId, Ad currentAd, BotCallback botCallback) {
+    public void finalizeAndSaveAd(Long chatId, Ad currentAd) {
         BotUser user = userService.findByTelegramId(chatId);
         currentAd.setUser(user);
         if (currentAd instanceof Automobile) {
@@ -255,8 +259,8 @@ public class TransportService {
         } else if (currentAd instanceof OtherTransport) {
             otherTransService.saveOtherTech((OtherTransport) currentAd);
         }
-
-        botCallback.sendMessageWithInlKeyboard(chatId, "E'lon muvaffaqiyatli joylandi \uD83D\uDC4F", null);
+        botCallback.sendMessageWithInlKeyboard(chatId, "E'lon muvaffaqiyatli joylandi \uD83D\uDC4F" + "\n" + "yana e'lon joylash uchun " +
+                "boshidan boshlang \uD83D\uDE1C", null);
     }
 
     public void addToFavorite(Long chatId, String callbackData, Class<? extends Ad> adClass) {
@@ -289,21 +293,10 @@ public class TransportService {
         }
     }
 
-    public void displayNextPage(Long chatId, Class<? extends Ad> adClass) {
+    public void displayNextPage(Long chatId, Class<? extends Ad> adClass, int requestedPage) {
         List<? extends Ad> ads = getAdsByClass(adClass);
-        int totalAds = ads.size();
-        int totalPages = (int) Math.ceil((double) totalAds / PAGE_SIZE);
-        int currentPage = userPageState.getOrDefault(chatId, 1);
-        // Berechnen Sie die zu zeigenden Anzeigen basierend auf der aktuellen Seite
-        int startIndex = (currentPage - 1) * PAGE_SIZE;
-        int endIndex = Math.min(startIndex + PAGE_SIZE, totalAds);
-        List<? extends Ad> adsToShow = ads.subList(startIndex, endIndex);
-
-        log.info("totalPages: " + totalPages + " currentPage: " + currentPage + " startIndex: " + startIndex + " endInex: " + endIndex);
-        displayAdsAtSearch(chatId, adsToShow);
-
-        // InlineKeyboardMarkup inlineKeyboard = button.createInlineKeyboardForPages(currentPage, totalPages);
-        //  botCallback.sendMessageWithInlKeyboard(chatId, "Wählen Sie eine Seite:", inlineKeyboard);
+        userPageState.put(chatId, requestedPage);
+        displayAdsAtSearch(chatId, ads);
     }
 
     private List<? extends Ad> getAdsByClass(Class<? extends Ad> adClass) {

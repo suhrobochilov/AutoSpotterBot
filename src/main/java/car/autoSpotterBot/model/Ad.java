@@ -1,4 +1,4 @@
-package car.autoSpotterBot.model.transport;
+package car.autoSpotterBot.model;
 
 
 import car.autoSpotterBot.model.BotUser;
@@ -12,7 +12,7 @@ import java.util.List;
 public abstract class Ad {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne

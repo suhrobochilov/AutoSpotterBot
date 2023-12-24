@@ -14,8 +14,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static car.autoSpotterBot.state.UserStateConstants.PLACE_AD;
-import static car.autoSpotterBot.state.UserStateConstants.SEARCH_AD;
+import static car.autoSpotterBot.state.UserStateConstants.*;
 
 @Component
 public class AutoInterpreter {
@@ -35,18 +34,17 @@ public class AutoInterpreter {
         this.userStateTransport = userStateTransport;
     }
 
-    public void autointerpreter( long chatId, int messageId, String text, String photoUrl, String videoUrl) {
+    public void autointerpreter(long chatId, int messageId, String text, String photoUrl, String videoUrl) {
 
-        Automobile currentAutomobile = currentAdAuto.getOrDefault(chatId, new Automobile());
+        Automobile currentAd = currentAdAuto.getOrDefault(chatId, new Automobile());
         if (text != null) {
             if (text.equals(ButtonConstant.backInAutoAd)) {
-                log.info("AutoState: " + userStateManager.getUserSubStatus(chatId));
                 InlineKeyboardMarkup newButton = button.transMenu();
-                checkUserSubStatus(chatId,messageId,newButton);
+                checkUserSubStatus(chatId, messageId, newButton);
             }
             if (text.startsWith("page")) {
-                log.info("text in AutoClass: " + text);
-                transportService.displayNextPage(chatId, Automobile.class);
+                int id = splitText(text);
+                transportService.displayNextPage(chatId, Automobile.class, id);
                 userStateManager.setUserSubStatus(chatId, PLACE_AD);
             }
             if (text.equals(ButtonConstant.previousPage)) {
@@ -62,52 +60,30 @@ public class AutoInterpreter {
                 transportService.addToFavorite(chatId, text, Automobile.class);
                 userStateManager.setUserSubStatus(chatId, PLACE_AD);
             }
-            if (userStateManager.getUserSubStatus(chatId).equals(SEARCH_AD) && !text.equals(ButtonConstant.backInAutoAd)) {
+            if (userStateManager.getUserSubStatus(chatId) != null && userStateManager.getUserSubStatus(chatId).equals(SEARCH_AD) && !text.equals(ButtonConstant.backInAutoAd)) {
                 transportService.searchAd(chatId, text, Automobile.class);
+            }
+            if (userStateManager.getUserSubStatus(chatId) != null && !userStateManager.getUserSubStatus(chatId).equals(SEARCH_AD)) {
+                saveLocation(chatId, messageId, text, currentAd);
+            } else if (userStateManager.getUserSubStatus(chatId) == null) {
+                botCallback.sendMessageWithInlKeyboard(chatId, "E'lon berish uchun boshidan boshlang", null);
             }
 
             if (text.equals(ButtonConstant.confirm)) {
-                transportService.finalizeAndSaveAd(chatId, currentAutomobile, botCallback);
-                botCallback.deleteMessageLater(chatId, messageId, 10);
-                currentAdAuto.clear();
+                confirmAd(chatId, messageId, currentAd);
             }
             if (text.equals(ButtonConstant.cancel)) {
-                cancelAutoAd(chatId);
-                botCallback.deleteMessageLater(chatId, messageId, 10);
-            }
-            if (!userStateManager.getUserSubStatus(chatId).equals(SEARCH_AD)) {
-                switch (text) {
-                    case "Toshkent", "Andijon", "Buxoro", "Farg'ona", "Jizzax", "Sirdaryo", "Namangan", "Samarqand",
-                            "Xorazm", "Surxandaryo", "Qashqadaryo", "Qoraqalpog'iston", "Navoi" -> {
-                        transportService.setStandort(text, currentAutomobile);
-                        currentAdAuto.put(chatId, currentAutomobile);
-                        botCallback.editMessage(chatId, messageId, MessageText.autoAdExample, null);
-                    }
-                }
+                cancelAutoAd(chatId, messageId);
             }
         }
 
-        if (photoUrl != null) {
-            transportService.saveUrl(text, photoUrl, null, currentAutomobile);
-            botCallback.deleteMessage(chatId, messageId);
-
-            if (text != null) {
-                botCallback.sendPhotoWithInlKeyboard(chatId, currentAutomobile.getDescription(), photoUrl, button.inlKeyboardConfirmation());
-            }
+        if (photoUrl != null && userStateManager.getUserSubStatus(chatId) != null) {
+            botCallback.deleteMessageLater(chatId,messageId, 3);
+            savePhotoUrl(chatId, messageId, text, photoUrl, currentAd);
         }
-
-        if (videoUrl != null) {
-            transportService.saveUrl(text, null, videoUrl, currentAutomobile);
-            if (text != null) {
-                botCallback.sendVideoWithInlKeyboard(chatId, currentAutomobile.getDescription(), videoUrl, button.inlKeyboardConfirmation());
-            }
+        if (videoUrl != null && userStateManager.getUserSubStatus(chatId) != null) {
+            saveVideoUrl(chatId, messageId, text, videoUrl, currentAd);
         }
-    }
-
-    private void cancelAutoAd(Long chatId) {
-        currentAdAuto.remove(chatId);
-        botCallback.sendMessageWithInlKeyboard(chatId, "E'lon bekor qilindi", null);
-        currentAdAuto.clear();
     }
 
     private void checkUserSubStatus(long chatId, int messageId, InlineKeyboardMarkup newKeyboard) {
@@ -116,6 +92,75 @@ public class AutoInterpreter {
         } else {
             botCallback.editMessage(chatId, messageId, "Qanday transport vositasini qidiryapsiz?", newKeyboard);
         }
-        userStateTransport.setUserStatusTransport(chatId,null);
+        userStateTransport.setUserStatusTransport(chatId, null);
+    }
+
+    private Integer splitText(String text) {
+        String[] parts = text.split("_");
+        return Integer.parseInt(parts[1]);
+    }
+
+    private void savePhotoUrl(long chatId, int messageId, String text, String photoUrl, Automobile currentAd) {
+        log.info("userState in Foto: "+ userStateTransport.getUserStateAuto(chatId));
+        if (text != null) {
+            botCallback.sendPhotoWithInlKeyboard(chatId, currentAd.getDescription(), photoUrl, button.inlKeyboardConfirmation());
+            userStateTransport.setUserStateAuto(chatId, PHOTO);
+            transportService.saveUrl(text, photoUrl, null, currentAd);
+        }
+        if (userStateTransport.getUserStateAuto(chatId) == null || !userStateTransport.getUserStateAuto(chatId).equals(EMPTY) &&
+                !userStateTransport.getUserStateAuto(chatId).equals(PHOTO) && !userStateTransport.getUserStateAuto(chatId).equals(VIDEO)) {
+            botCallback.sendMessageWithInlKeyboard(chatId, " Foto E'lon matnini rasm va videolar bilan birgalikda yuboring", null);
+            userStateTransport.setUserStateAuto(chatId, EMPTY);
+        }
+        if (userStateTransport.getUserStateAuto(chatId) != null && userStateTransport.getUserStateAuto(chatId).equals(PHOTO) ||
+                userStateTransport.getUserStateAuto(chatId).equals(VIDEO)) {
+            transportService.saveUrl(text, photoUrl, null, currentAd);
+        }
+    }
+
+    private void saveVideoUrl(long chatId, int messageId, String text, String videoUrl, Automobile currentAd) {
+        log.info("UserState in Video: " + userStateTransport.getUserStateAuto(chatId));
+        if (text != null) {
+            botCallback.sendVideoWithInlKeyboard(chatId, currentAd.getDescription(), videoUrl, button.inlKeyboardConfirmation());
+            userStateTransport.setUserStateAuto(chatId, VIDEO);
+            transportService.saveUrl(text, null, videoUrl, currentAd);
+        }
+        if (userStateTransport.getUserStateAuto(chatId) == null || !userStateTransport.getUserStateAuto(chatId).equals(EMPTY) &&
+                !userStateTransport.getUserStateAuto(chatId).equals(PHOTO) && !userStateTransport.getUserStateAuto(chatId).equals(VIDEO)) {
+            botCallback.sendMessageWithInlKeyboard(chatId, "Video E'lon matnini rasm va videolar bilan birgalikda yuboring", null);
+            userStateTransport.setUserStateAuto(chatId, EMPTY);
+        }
+        if (userStateTransport.getUserStateAuto(chatId) != null && userStateTransport.getUserStateAuto(chatId).equals(PHOTO) ||
+                userStateTransport.getUserStateAuto(chatId).equals(VIDEO)) {
+            transportService.saveUrl(text, null, videoUrl, currentAd);
+        }
+    }
+
+    private void confirmAd(long chatId, int messageId, Automobile currentAd) {
+        transportService.finalizeAndSaveAd(chatId, currentAd);
+        currentAdAuto.remove(chatId);
+        currentAdAuto.clear();
+        userStateManager.setUserSubStatus(chatId, null);
+        userStateTransport.setUserStateAuto(chatId, null);
+        botCallback.deleteMessageLater(chatId,messageId,1);
+    }
+
+    private void cancelAutoAd(Long chatId, int messageId) {
+        currentAdAuto.remove(chatId);
+        botCallback.sendMessageWithInlKeyboard(chatId, "E'lon bekor qilindi", null);
+        currentAdAuto.clear();
+        userStateManager.setUserSubStatus(chatId, null);
+        userStateTransport.setUserStateAuto(chatId, null);
+    }
+
+    private void saveLocation(long chatId, int messageId, String text, Automobile currentAd) {
+        switch (text) {
+            case "Toshkent", "Andijon", "Buxoro", "Farg'ona", "Jizzax", "Sirdaryo", "Namangan", "Samarqand",
+                    "Xorazm", "Surxandaryo", "Qashqadaryo", "Qoraqalpog'iston", "Navoi" -> {
+                transportService.setStandort(text, currentAd);
+                currentAdAuto.put(chatId, currentAd);
+                botCallback.editMessage(chatId, messageId, MessageText.autoAdExample, null);
+            }
+        }
     }
 }

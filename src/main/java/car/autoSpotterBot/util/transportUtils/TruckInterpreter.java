@@ -45,7 +45,7 @@ public class TruckInterpreter {
             }
             if (text.equals(ButtonConstant.nextPage)) {
                 botCallback.deleteMessage(chatId, messageId);
-                transportService.displayNextPage(chatId, Truck.class);
+                transportService.displayNextPage(chatId, Truck.class,2);
                 userStateManager.setUserSubStatus(chatId, PLACE_AD);
             }
             if (text.equals(ButtonConstant.previousPage)) {
@@ -66,11 +66,6 @@ public class TruckInterpreter {
                 botCallback.sendMessageWithReplyKeyboard(chatId, "Keyingi e'lonlarni ko'rish uchun \uD83D\uDC47", button.nextPage());
             }
 
-            if (text.equals(ButtonConstant.confirm)) {
-                transportService.finalizeAndSaveAd(chatId, currentTruck, botCallback);
-                botCallback.deleteMessageLater(chatId, messageId, 10);
-                currentAdAuto.clear();
-            }
             if (text.equals(ButtonConstant.cancel)) {
                 cancelAutoAd(chatId);
                 botCallback.deleteMessageLater(chatId, messageId, 10);
@@ -85,9 +80,15 @@ public class TruckInterpreter {
                     }
                 }
             }
+            if (text.equals(ButtonConstant.confirm)) {
+                transportService.finalizeAndSaveAd(chatId, currentTruck);
+                botCallback.deleteMessageLater(chatId, messageId, 10);
+                currentAdAuto.clear();
+                userStateManager.setUserSubStatus(chatId, null);
+            }
         }
 
-        if (photoUrl != null) {
+        if (photoUrl != null && userStateManager.getUserSubStatus(chatId) != null) {
             transportService.saveUrl(text, photoUrl, null, currentTruck);
             botCallback.deleteMessage(chatId, messageId);
 
@@ -96,7 +97,7 @@ public class TruckInterpreter {
             }
         }
 
-        if (videoUrl != null) {
+        if (videoUrl != null && userStateManager.getUserSubStatus(chatId) != null) {
             transportService.saveUrl(text, null, videoUrl, currentTruck);
             if (text != null) {
                 botCallback.sendVideoWithInlKeyboard(chatId, currentTruck.getDescription(), videoUrl, button.inlKeyboardConfirmation());

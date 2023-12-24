@@ -7,7 +7,6 @@ import car.autoSpotterBot.model.BotUser;
 import car.autoSpotterBot.service.AdService;
 import car.autoSpotterBot.service.BotUserService;
 import car.autoSpotterBot.service.transport.TransportService;
-import car.autoSpotterBot.state.UserStateConstants;
 import car.autoSpotterBot.state.UserStateManager;
 import car.autoSpotterBot.state.UserStateRealEstate;
 import car.autoSpotterBot.state.UserStateTransport;
@@ -37,8 +36,8 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -54,13 +53,13 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
     private final UserStateTransport userStateTransport;
     private final UserStateRealEstate userStateRealEstate;
     private final BotConfig botConfig;
-    private final Map<Long, Integer> idsForPLace = new ConcurrentHashMap<>();
-    private final Map<Long, Integer> idsForSearch = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private List<Integer> placedAdId = new ArrayList<>();
+    private List<Integer> searchAdId = new ArrayList<>();
     private AdService adService;
     private TransportInterpreter transportInterpreter;
     private RealEstateInterpreter realEstateInterpreter;
     private TransportService transportService;
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
 
     public MyBot(BotUserService userService, Button buttonService, UserStateManager userStateManager, UserStateTransport userStateTransport, UserStateRealEstate userStateRealEstate, BotConfig botConfig) {
@@ -71,21 +70,25 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
         this.userStateRealEstate = userStateRealEstate;
         this.botConfig = botConfig;
     }
+
     @Autowired
     @Lazy
     public void setAdService(AdService adService) {
         this.adService = adService;
     }
+
     @Autowired
     @Lazy
     public void setTransportInterpreter(TransportInterpreter transportInterpreter) {
         this.transportInterpreter = transportInterpreter;
     }
+
     @Autowired
     @Lazy
     public void setRealEstateInterpreter(RealEstateInterpreter realEstateInterpreter) {
         this.realEstateInterpreter = realEstateInterpreter;
     }
+
     @Autowired
     @Lazy
     public void setTransportService(TransportService transportService) {
@@ -106,6 +109,7 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
                 saveNewUser(chatId, firstName, lastName, userName);
             }
             if (text.equals("/start")) {
+                deleteMessageLater(chatId, messageId, 2);
                 sendMessageWithReplyKeyboard(chatId, MessageText.startMessage, button.startMenu());
                 userStateManager.setUserMainStatus(chatId, START);
                 userStateTransport.setUserStatusTransport(chatId, null);
@@ -113,12 +117,13 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
             }
 
             if (text.equals(ButtonConstant.myAds)) {
+                deleteMessageLater(chatId, messageId, 3);
                 adService.getMyAds(chatId);
-                deleteMessageLater(chatId, messageId, 5);
                 userStateManager.setUserSubStatus(chatId, null);
                 userStateManager.setUserMainStatus(chatId, null);
             }
             if (text.equals(ButtonConstant.myFavorite)) {
+                deleteMessageLater(chatId, messageId, 3);
                 transportService.getMyFavorite(chatId);
                 deleteMessageLater(chatId, messageId, 5);
                 userStateManager.setUserSubStatus(chatId, null);
@@ -132,10 +137,10 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
                 userStateManager.setUserSubStatus(chatId, null);
             }
             if (text.equals(ButtonConstant.placeAd)) {
-                getMessageIds(chatId, text);
+                placeAd(chatId, messageId);
             }
             if (text.equals(ButtonConstant.searchAd)) {
-                getMessageIds(chatId, text);
+                searchAd(chatId, messageId);
             }
             if (userStateManager.getUserMainStatus(chatId) != null &&
                     userStateManager.getUserMainStatus(chatId).equals(TRANSPORT) && !text.equals(ButtonConstant.searchAd) && !text.equals(ButtonConstant.placeAd)) {
@@ -201,32 +206,34 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
 
     }
 
-    private void getMessageIds(long chatId, String text) {
-        if (text.equals(ButtonConstant.placeAd)) {
-            Message message = sendMessageWithInlKeyboard(chatId, MessageText.placeAdMessage, button.mainMenu());
-            getMessageId(chatId, message, idsForPLace, idsForSearch, PLACE_AD);
-        }
-        if (text.equals(ButtonConstant.searchAd)) {
-            Message message = sendMessageWithInlKeyboard(chatId, MessageText.searchAdMessage, button.mainMenu());
-            getMessageId(chatId, message, idsForSearch, idsForPLace, SEARCH_AD);
-        }
+    private void placeAd(long chatId, int messageId) {
+        deleteMessageLater(chatId, messageId, 1);
+        Message message = sendMessageWithInlKeyboard(chatId, MessageText.placeAdMessage, button.mainMenu());
+        placedAdId.add(message.getMessageId());
         userStateManager.setUserMainStatus(chatId, null);
+        userStateManager.setUserSubStatus(chatId, PLACE_AD);
+        userStateTransport.setUserStatusTransport(chatId, null);
+        if (getSearchAdId() != null) {
+            for (Integer integer : getSearchAdId()) {
+                deleteMessageLater(chatId, integer, 2);
+            }
+            searchAdId.clear();
+        }
     }
 
-    private void getMessageId(long chatId, Message message, Map<Long, Integer> idsForPLace, Map<Long, Integer> idsForSearch, UserStateConstants userStateConstants) {
-        int id = message.getMessageId();
-        if (!idsForSearch.isEmpty()) {
-            idsForPLace.put(chatId, id);
-            int getId = idsForSearch.get(chatId);
-            deleteMessageLater(chatId, getId, 5);
-        }
-        if (!idsForPLace.isEmpty()) {
-            idsForSearch.put(chatId, id);
-            int getId = idsForPLace.get(chatId);
-            deleteMessageLater(chatId, getId, 5);
-        }
-        userStateManager.setUserSubStatus(chatId, userStateConstants);
+    private void searchAd(long chatId, int messageId) {
+        deleteMessageLater(chatId, messageId, 1);
+        Message message = sendMessageWithInlKeyboard(chatId, MessageText.searchAdMessage, button.mainMenu());
+        searchAdId.add(message.getMessageId());
+        userStateManager.setUserSubStatus(chatId, SEARCH_AD);
         userStateTransport.setUserStatusTransport(chatId, null);
+        userStateManager.setUserMainStatus(chatId, null);
+        if (getPlacedAdId() != null) {
+            for (Integer integer : getPlacedAdId()) {
+                deleteMessageLater(chatId, integer, 1);
+            }
+            placedAdId.clear();
+        }
     }
 
     private void saveNewUser(Long chatId, String firstName, String lastName, String userName) {
@@ -412,6 +419,14 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
+    }
+
+    public List<Integer> getPlacedAdId() {
+        return placedAdId;
+    }
+
+    public List<Integer> getSearchAdId() {
+        return searchAdId;
     }
 
     @Override

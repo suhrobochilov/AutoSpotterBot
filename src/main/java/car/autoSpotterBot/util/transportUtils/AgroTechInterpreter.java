@@ -35,17 +35,17 @@ public class AgroTechInterpreter {
         this.userStateTransport = userStateTransport;
     }
 
-    public void interpreter( long chatId, int messageId, String text, String photoUrl, String videoUrl) {
+    public void interpreter(long chatId, int messageId, String text, String photoUrl, String videoUrl) {
 
         AgroTechnology currentAd = currentAdMap.getOrDefault(chatId, new AgroTechnology());
         if (text != null) {
             if (text.equals(ButtonConstant.backInAutoAd)) {
                 InlineKeyboardMarkup newButton = button.transMenu();
-                checkUserSubStatus(chatId,messageId,newButton);
+                checkUserSubStatus(chatId, messageId, newButton);
             }
             if (text.equals(ButtonConstant.nextPage)) {
                 botCallback.deleteMessage(chatId, messageId);
-                transportService.displayNextPage(chatId, AgroTechnology.class);
+                transportService.displayNextPage(chatId, AgroTechnology.class, 2);
                 userStateManager.setUserSubStatus(chatId, PLACE_AD);
             }
             if (text.equals(ButtonConstant.previousPage)) {
@@ -66,16 +66,7 @@ public class AgroTechInterpreter {
                 botCallback.sendMessageWithReplyKeyboard(chatId, "Keyingi e'lonlarni ko'rish uchun \uD83D\uDC47", button.nextPage());
             }
 
-            if (text.equals(ButtonConstant.confirm)) {
-                transportService.finalizeAndSaveAd(chatId, currentAd, botCallback);
-                botCallback.deleteMessageLater(chatId, messageId, 10);
-                currentAdMap.clear();
-            }
-            if (text.equals(ButtonConstant.cancel)) {
-                cancelAutoAd(chatId);
-                botCallback.deleteMessageLater(chatId, messageId, 10);
-            }
-            if (!userStateManager.getUserSubStatus(chatId).equals(SEARCH_AD)) {
+            if (userStateManager.getUserSubStatus(chatId) != null && !userStateManager.getUserSubStatus(chatId).equals(SEARCH_AD)) {
                 switch (text) {
                     case "Toshkent", "Andijon", "Buxoro", "Farg'ona", "Jizzax", "Sirdaryo", "Namangan", "Samarqand",
                             "Xorazm", "Surxandaryo", "Qashqadaryo", "Qoraqalpog'iston", "Navoi" -> {
@@ -84,14 +75,25 @@ public class AgroTechInterpreter {
                         botCallback.editMessage(chatId, messageId, MessageText.autoAdExample, null);
                     }
                 }
+            } else if (userStateManager.getUserSubStatus(chatId) != null) {
+                botCallback.sendMessageWithInlKeyboard(chatId, "E'lon berish uchun boshidan boshlang", null);
+            }
+            if (text.equals(ButtonConstant.confirm)) {
+                transportService.finalizeAndSaveAd(chatId, currentAd);
+                botCallback.deleteMessageLater(chatId, messageId, 10);
+                currentAdMap.clear();
+                userStateManager.setUserSubStatus(chatId, null);
+            }
+            if (text.equals(ButtonConstant.cancel)) {
+                cancelAutoAd(chatId, messageId);
             }
         }
 
-        if (photoUrl != null) {
+        if (photoUrl != null && userStateManager.getUserSubStatus(chatId) != null) {
             transportService.saveUrl(text, photoUrl, null, currentAd);
             botCallback.deleteMessage(chatId, messageId);
 
-            if (text != null) {
+            if (text != null && userStateManager.getUserSubStatus(chatId) != null) {
                 botCallback.sendPhotoWithInlKeyboard(chatId, currentAd.getDescription(), photoUrl, button.inlKeyboardConfirmation());
             }
         }
@@ -104,10 +106,12 @@ public class AgroTechInterpreter {
         }
     }
 
-    private void cancelAutoAd(Long chatId) {
+    private void cancelAutoAd(Long chatId, int messageId) {
         currentAdMap.remove(chatId);
         botCallback.sendMessageWithInlKeyboard(chatId, "E'lon bekor qilindi", null);
         currentAdMap.clear();
+        botCallback.deleteMessageLater(chatId, messageId, 10);
+        userStateManager.setUserSubStatus(chatId, null);
     }
 
     private void checkUserSubStatus(long chatId, int messageId, InlineKeyboardMarkup newKeyboard) {
@@ -116,6 +120,6 @@ public class AgroTechInterpreter {
         } else {
             botCallback.editMessage(chatId, messageId, "Qanday transport vositasini qidiryapsiz?", newKeyboard);
         }
-        userStateTransport.setUserStatusTransport(chatId,null);
+        userStateTransport.setUserStatusTransport(chatId, null);
     }
 }

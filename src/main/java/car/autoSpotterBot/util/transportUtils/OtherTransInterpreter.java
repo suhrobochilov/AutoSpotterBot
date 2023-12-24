@@ -44,7 +44,7 @@ public class OtherTransInterpreter {
             }
             if (text.equals(ButtonConstant.nextPage)) {
                 botCallback.deleteMessage(chatId, messageId);
-                transportService.displayNextPage(chatId, OtherTransport.class);
+                transportService.displayNextPage(chatId, OtherTransport.class,2);
                 userStateManager.setUserSubStatus(chatId, PLACE_AD);
             }
             if (text.equals(ButtonConstant.previousPage)) {
@@ -66,7 +66,7 @@ public class OtherTransInterpreter {
             }
 
             if (text.equals(ButtonConstant.confirm)) {
-                transportService.finalizeAndSaveAd(chatId, currentAd, botCallback);
+                transportService.finalizeAndSaveAd(chatId, currentAd);
                 botCallback.deleteMessageLater(chatId, messageId, 10);
                 currentAdMap.clear();
             }
@@ -86,7 +86,7 @@ public class OtherTransInterpreter {
             }
         }
 
-        if (photoUrl != null) {
+        if (photoUrl != null && userStateManager.getUserSubStatus(chatId) != null) {
             transportService.saveUrl(text, photoUrl, null, currentAd);
             botCallback.deleteMessage(chatId, messageId);
 
@@ -95,7 +95,7 @@ public class OtherTransInterpreter {
             }
         }
 
-        if (videoUrl != null) {
+        if (videoUrl != null && userStateManager.getUserSubStatus(chatId) != null) {
             transportService.saveUrl(text, null, videoUrl, currentAd);
             if (text != null) {
                 botCallback.sendVideoWithInlKeyboard(chatId, currentAd.getDescription(), videoUrl, button.inlKeyboardConfirmation());

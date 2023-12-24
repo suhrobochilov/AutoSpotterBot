@@ -1,5 +1,6 @@
 package car.autoSpotterBot.model.transport;
 
+import car.autoSpotterBot.model.Ad;
 import car.autoSpotterBot.model.BotUser;
 import jakarta.persistence.*;
 

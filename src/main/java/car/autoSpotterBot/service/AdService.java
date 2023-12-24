@@ -2,6 +2,7 @@ package car.autoSpotterBot.service;
 
 import car.autoSpotterBot.button.Button;
 import car.autoSpotterBot.exception.AdNotFoundException;
+import car.autoSpotterBot.model.Ad;
 import car.autoSpotterBot.model.BotUser;
 import car.autoSpotterBot.model.realeState.Apartment;
 import car.autoSpotterBot.model.realeState.House;

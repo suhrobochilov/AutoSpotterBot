@@ -16,6 +16,9 @@ public enum UserStateConstants {
     PARKING_SPACE,
     BUILDING_LOT,
     RENTAL_HOME,
-    BUSINESS_PREMISE
+    BUSINESS_PREMISE,
+    PHOTO,
+    VIDEO,
+    EMPTY
 
 }
