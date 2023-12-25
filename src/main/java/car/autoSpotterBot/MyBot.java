@@ -109,32 +109,17 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
             if (existingUser == null) {
                 saveNewUser(chatId, firstName, lastName, userName);
             }
-            if (text.equals("/start")) {
-                deleteMessageLater(chatId, messageId, 2);
-                sendMessageWithReplyKeyboard(chatId, MessageText.startMessage, button.startMenu());
-                userStateManager.setUserMainStatus(chatId, START);
-                userStateTransport.setUserStatusTransport(chatId, null);
-                userStateManager.setUserSubStatus(chatId, null);
-            }
-
-            if (text.equals(ButtonConstant.myAds)) {
-                myAds(chatId, messageId);
-            }
-            if (text.equals(ButtonConstant.myFavorite)) {
-                myFavorite(chatId, messageId);
-            }
-            if (text.equals(ButtonConstant.back)) {
-                sendMessageWithReplyKeyboard(chatId, "Asosiy menu", button.startMenu());
-                userStateManager.setUserMainStatus(chatId, START);
-                userStateTransport.setUserStatusTransport(chatId, null);
-                userStateRealEstate.setUserStatusRealEstate(chatId, null);
-                userStateManager.setUserSubStatus(chatId, null);
-            }
-            if (text.equals(ButtonConstant.placeAd)) {
-                placeAd(chatId, messageId);
-            }
-            if (text.equals(ButtonConstant.searchAd)) {
-                searchAd(chatId, messageId);
+            switch (text) {
+                case "/start" -> start(chatId,messageId);
+                case ButtonConstant.myAds -> myAds(chatId, messageId);
+                case ButtonConstant.myFavorite -> myFavorite(chatId, messageId);
+                case ButtonConstant.back -> back(chatId);
+                case ButtonConstant.placeAd -> placeAd(chatId, messageId);
+                case ButtonConstant.searchAd -> searchAd(chatId, messageId);
+                default -> {
+                    Message message = sendMessageWithInlKeyboard(chatId, "Noto'g'ri xabar yubordingiz!", null);
+                    deleteMessageLater(chatId, message.getMessageId(), 7);
+                }
             }
             if (userStateManager.getUserMainStatus(chatId) != null &&
                     userStateManager.getUserMainStatus(chatId).equals(TRANSPORT) && !text.equals(ButtonConstant.searchAd) && !text.equals(ButtonConstant.placeAd)) {
@@ -163,14 +148,12 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
             String callbackData = update.getCallbackQuery().getData();
             int messageId = update.getCallbackQuery().getMessage().getMessageId();
             if (callbackData.equals(ButtonConstant.mainMenu)) {
-                InlineKeyboardMarkup newButton = button.mainMenu();
-                editMessage(chatId, messageId, MessageText.placeAdMessage, newButton);
-                userStateManager.setUserMainStatus(chatId, START);
-                userStateTransport.setUserStatusTransport(chatId, null);
+                mainMenu(chatId, messageId);
             }
             if (userStateManager.getUserMainStatus(chatId) != null && userStateManager.getUserMainStatus(chatId).equals(TRANSPORT)) {
                 transportInterpreter.transportInterpreter(update);
-            } else if (userStateManager.getUserMainStatus(chatId) != null && userStateManager.getUserMainStatus(chatId).equals(REAL_ESTATE)) {
+            }
+            if (userStateManager.getUserMainStatus(chatId) != null && userStateManager.getUserMainStatus(chatId).equals(REAL_ESTATE)) {
                 realEstateInterpreter.interpreter(update);
             }
             if (callbackData.equals(ButtonConstant.transport)) {
@@ -202,7 +185,7 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
 
     private void placeAd(long chatId, int messageId) {
         deleteMessageLater(chatId, messageId, 1);
-        updateStateAndClearOldMessages(chatId, allMessageIds.getIdOfAdsShown(), allMessageIds.getIdOfMyAds(), allMessageIds.getIdFavoriteAds(),
+        clearOldMessages(chatId, allMessageIds.getIdOfAdsShown(), allMessageIds.getIdOfMyAds(), allMessageIds.getIdFavoriteAds(),
                 allMessageIds.getIdOfButton(), allMessageIds.getIdSearchButton(), allMessageIds.getIdPlaceAdButton(), PLACE_AD);
         Message message = sendMessageWithInlKeyboard(chatId, MessageText.placeAdMessage, button.mainMenu());
         allMessageIds.setIdPlaceAdButton(message.getMessageId());
@@ -210,7 +193,7 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
 
     private void searchAd(long chatId, int messageId) {
         deleteMessageLater(chatId, messageId, 1);
-        updateStateAndClearOldMessages(chatId, allMessageIds.getIdOfAdsShown(), allMessageIds.getIdOfMyAds(), allMessageIds.getIdFavoriteAds(),
+        clearOldMessages(chatId, allMessageIds.getIdOfAdsShown(), allMessageIds.getIdOfMyAds(), allMessageIds.getIdFavoriteAds(),
                 allMessageIds.getIdOfButton(), allMessageIds.getIdSearchButton(), allMessageIds.getIdPlaceAdButton(), SEARCH_AD);
         Message message = sendMessageWithInlKeyboard(chatId, MessageText.searchAdMessage, button.mainMenu());
         allMessageIds.setIdSearchButton(message.getMessageId());
@@ -220,20 +203,46 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
         deleteMessageLater(chatId, messageId, 3);
         userStateManager.setUserSubStatus(chatId, null);
         userStateManager.setUserMainStatus(chatId, null);
-        updateStateAndClearOldMessages(chatId, allMessageIds.getIdOfAdsShown(), allMessageIds.getIdOfMyAds(), allMessageIds.getIdFavoriteAds(),
+        clearOldMessages(chatId, allMessageIds.getIdOfAdsShown(), allMessageIds.getIdOfMyAds(), allMessageIds.getIdFavoriteAds(),
                 allMessageIds.getIdOfButton(), allMessageIds.getIdSearchButton(), allMessageIds.getIdPlaceAdButton(), null);
         adService.getMyAds(chatId);
     }
 
     private void myFavorite(long chatId, int messageId) {
         deleteMessageLater(chatId, messageId, 3);
-        updateStateAndClearOldMessages(chatId, allMessageIds.getIdOfAdsShown(), allMessageIds.getIdOfMyAds(), allMessageIds.getIdFavoriteAds(),
+        clearOldMessages(chatId, allMessageIds.getIdOfAdsShown(), allMessageIds.getIdOfMyAds(), allMessageIds.getIdFavoriteAds(),
                 allMessageIds.getIdOfButton(), allMessageIds.getIdSearchButton(), allMessageIds.getIdPlaceAdButton(), null);
         adService.getMyFavorite(chatId);
     }
 
-    private void updateStateAndClearOldMessages(long chatId, List<Integer> idOfAdsShown, List<Integer> idOfMyAds, List<Integer> idOfFavorite,
-                                                int idOfButton, int idSearchButton, int idPlaceAdButton, UserStateConstants subStatus) {
+    private void start(long chatId, int messageId) {
+        deleteMessageLater(chatId, messageId, 2);
+        sendMessageWithReplyKeyboard(chatId, MessageText.startMessage, button.startMenu());
+        setUserState(chatId, START, null, null, null);
+    }
+
+    private void back(long chatId) {
+        sendMessageWithReplyKeyboard(chatId, "Asosiy menu", button.startMenu());
+        setUserState(chatId, START, null, null, null);
+    }
+    private void mainMenu(long chatId, int messageId){
+        InlineKeyboardMarkup newButton = button.mainMenu();
+        editMessage(chatId, messageId, MessageText.placeAdMessage, newButton);
+        userStateManager.setUserMainStatus(chatId, START);
+        userStateTransport.setUserStatusTransport(chatId, null);
+        setUserState(chatId,START,this.userStateManager.getUserSubStatus(chatId),null,null);
+    }
+
+    private void setUserState(long chatId, UserStateConstants userMainState, UserStateConstants userSubState,
+                              UserStateConstants userStateTransport, UserStateConstants userStateRealEstate) {
+        this.userStateManager.setUserMainStatus(chatId, userMainState);
+        this.userStateTransport.setUserStatusTransport(chatId, userStateTransport);
+        this.userStateRealEstate.setUserStatusRealEstate(chatId, userStateRealEstate);
+        this.userStateManager.setUserSubStatus(chatId, userSubState);
+    }
+
+    private void clearOldMessages(long chatId, List<Integer> idOfAdsShown, List<Integer> idOfMyAds, List<Integer> idOfFavorite,
+                                  int idOfButton, int idSearchButton, int idPlaceAdButton, UserStateConstants subStatus) {
         userStateManager.setUserSubStatus(chatId, subStatus);
         userStateTransport.setUserStatusTransport(chatId, null);
         userStateManager.setUserMainStatus(chatId, null);
@@ -433,19 +442,21 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
 
     @Override
     public void deleteMessageLater(Long chatId, Integer messageId, long delayInSeconds) {
-        Runnable task = () -> {
-            DeleteMessage deleteMessage = new DeleteMessage();
-            deleteMessage.setChatId(String.valueOf(chatId));
-            deleteMessage.setMessageId(messageId);
-
-            try {
-                execute(deleteMessage);
-            } catch (TelegramApiException e) {
-                e.printStackTrace();
-            }
-        };
-
-        scheduler.schedule(task, delayInSeconds, TimeUnit.SECONDS);
+        if (messageId != null) {
+            Runnable task = () -> {
+                DeleteMessage deleteMessage = new DeleteMessage();
+                deleteMessage.setChatId(String.valueOf(chatId));
+                deleteMessage.setMessageId(messageId);
+                try {
+                    execute(deleteMessage);
+                } catch (TelegramApiException e) {
+                    log.error("Error by delete Message: " + e);
+                }
+            };
+            scheduler.schedule(task, delayInSeconds, TimeUnit.SECONDS);
+        } else {
+            log.error("Id of Message is null: " + null);
+        }
     }
 
     @Override

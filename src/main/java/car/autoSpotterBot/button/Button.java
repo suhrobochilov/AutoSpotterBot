@@ -216,6 +216,7 @@ public class Button {
         inlineKeyboardMarkup.setKeyboard(rows);
         return inlineKeyboardMarkup;
     }
+
     public InlineKeyboardMarkup realEstateMenu() {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
@@ -279,6 +280,7 @@ public class Button {
         replyKeyboardMarkup.setKeyboard(keyboard);
         return replyKeyboardMarkup;
     }
+
     public InlineKeyboardMarkup createInlineKeyboardForPages(int currentPage, int totalPages) {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
@@ -290,7 +292,8 @@ public class Button {
         List<InlineKeyboardButton> pageButtons = new ArrayList<>();
         for (int i = startPage; i <= endPage; i++) {
             InlineKeyboardButton pageButton = new InlineKeyboardButton();
-            pageButton.setText(Integer.toString(i));
+            String buttonText = i == currentPage ? ("< " + i + " >") : Integer.toString(i);
+            pageButton.setText(buttonText);
             pageButton.setCallbackData("page_" + i);
             pageButtons.add(pageButton);
         }
@@ -318,7 +321,6 @@ public class Button {
         inlineKeyboardMarkup.setKeyboard(rows);
         return inlineKeyboardMarkup;
     }
-
 
 
 
