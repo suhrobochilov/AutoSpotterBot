@@ -48,10 +48,7 @@ public class AgroTechInterpreter {
                 transportService.displayNextPage(chatId, AgroTechnology.class, 2);
                 userStateManager.setUserSubStatus(chatId, PLACE_AD);
             }
-            if (text.equals(ButtonConstant.previousPage)) {
-                transportService.displayPreviousPage(chatId, AgroTechnology.class);
-                userStateManager.setUserSubStatus(chatId, PLACE_AD);
-            }
+
             if (text.startsWith(ButtonConstant.nextPhoto) || text.startsWith(ButtonConstant.previousPhoto) ||
                     text.startsWith(ButtonConstant.video) || text.startsWith(ButtonConstant.favorite)) {
                 transportService.getNextPhoto(chatId, text, messageId, AgroTechnology.class);

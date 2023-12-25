@@ -48,10 +48,6 @@ public class TruckInterpreter {
                 transportService.displayNextPage(chatId, Truck.class,2);
                 userStateManager.setUserSubStatus(chatId, PLACE_AD);
             }
-            if (text.equals(ButtonConstant.previousPage)) {
-                transportService.displayPreviousPage(chatId, Truck.class);
-                userStateManager.setUserSubStatus(chatId, PLACE_AD);
-            }
             if (text.startsWith(ButtonConstant.nextPhoto) || text.startsWith(ButtonConstant.previousPhoto) ||
                     text.startsWith(ButtonConstant.video) || text.startsWith(ButtonConstant.favorite)) {
                 transportService.getNextPhoto(chatId, text, messageId, Truck.class);

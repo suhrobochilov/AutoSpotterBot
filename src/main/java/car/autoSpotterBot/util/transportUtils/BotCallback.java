@@ -16,9 +16,9 @@ public interface BotCallback {
 
     Message sendMessageWithReplyKeyboard(Long chatId, String text, ReplyKeyboardMarkup keyboard);
 
-    void sendPhotoWithInlKeyboard(Long chatid, String text, String photoUrl, InlineKeyboardMarkup inlineKeyboardMarkup);
+    Integer sendPhotoWithInlKeyboard(Long chatid, String text, String photoUrl, InlineKeyboardMarkup inlineKeyboardMarkup);
 
-    void sendVideoWithInlKeyboard(Long chatId, String text, String videoUrl, InlineKeyboardMarkup inlineKeyboardMarkup);
+    Integer sendVideoWithInlKeyboard(Long chatId, String text, String videoUrl, InlineKeyboardMarkup inlineKeyboardMarkup);
 
     void deleteMessageLater(Long chatId, Integer messageId, long delayInSeconds);
 

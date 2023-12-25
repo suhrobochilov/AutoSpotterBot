@@ -13,10 +13,13 @@ import car.autoSpotterBot.repository.transport.TransportRepository;
 import car.autoSpotterBot.service.realEstate.ApartmentService;
 import car.autoSpotterBot.service.realEstate.HouseService;
 import car.autoSpotterBot.service.transport.*;
+import car.autoSpotterBot.util.MessageId;
 import car.autoSpotterBot.util.transportUtils.BotCallback;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.telegram.telegrambots.meta.api.objects.Message;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -33,9 +36,10 @@ public class AdService {
     private final OtherTransportService otherTransportService;
     private final ApartmentService apartmentService;
     private final HouseService houseService;
+    private final MessageId messageId;
 
 
-    public AdService(TransportRepository transportRepository, FavoritRepository favoritRepository, BotUserRepository botUserRepository, BotCallback botCallback, Button button, AutomobileService automobileService, TruckService truckService, AgroTechnologyService agroTechService, SparePartsService sparePartsService, OtherTransportService otherTransportService, ApartmentService apartmentService, HouseService houseService) {
+    public AdService(TransportRepository transportRepository, FavoritRepository favoritRepository, BotUserRepository botUserRepository, BotCallback botCallback, Button button, AutomobileService automobileService, TruckService truckService, AgroTechnologyService agroTechService, SparePartsService sparePartsService, OtherTransportService otherTransportService, ApartmentService apartmentService, HouseService houseService, MessageId messageId) {
         this.transportRepository = transportRepository;
         this.favoritRepository = favoritRepository;
         this.botUserRepository = botUserRepository;
@@ -48,6 +52,7 @@ public class AdService {
         this.otherTransportService = otherTransportService;
         this.apartmentService = apartmentService;
         this.houseService = houseService;
+        this.messageId = messageId;
     }
 
     public boolean deleteById(Long id) {
@@ -96,8 +101,38 @@ public class AdService {
             for (T ad : ads) {
                 String photoUrl = ad.getImageUrl().isEmpty() ? null : ad.getImageUrl().get(0);
                 String description = ad.getDescription();
-                botCallback.sendPhotoWithInlKeyboard(chatId, description, photoUrl, button.inlKeyboardForMyAds(ad.getId(), null));
+                int id = botCallback.sendPhotoWithInlKeyboard(chatId, description, photoUrl, button.inlKeyboardForMyAds(ad.getId(), null));
+                messageId.setIdOfMyAds(id);
             }
+        }
+    }
+
+    public void getMyFavorite(Long chatId) {
+        // Eine gemeinsame Liste für alle Favoriten
+        List<Ad> allFavorites = new ArrayList<>();
+
+        // Fügen Sie alle Favoriten der Liste hinzu
+        allFavorites.addAll(automobileService.getFavoritesByUserId(chatId));
+        allFavorites.addAll(truckService.getFavoritesByUserId(chatId));
+        allFavorites.addAll(agroTechService.getFavoritesByUserId(chatId));
+        allFavorites.addAll(sparePartsService.getFavoritesByUserId(chatId));
+        allFavorites.addAll(otherTransportService.getFavoritesByUserId(chatId));
+
+        // Anzeigen der Favoriten
+        displayMyFavorites(chatId, allFavorites);
+    }
+
+    private void displayMyFavorites(Long chatId, List<? extends Ad> ads) {
+        if (!ads.isEmpty()) {
+            for (Ad ad : ads) {
+                String photoUrl = ad.getImageUrl().isEmpty() ? null : ad.getImageUrl().get(0);
+                String description = ad.getDescription();
+                int id = botCallback.sendPhotoWithInlKeyboard(chatId, description, photoUrl, button.inlKeyboardMyFavorite(ad.getId(), null));
+                messageId.setIdFavoriteAds(id);
+            }
+        } else {
+            Message message = botCallback.sendMessageWithInlKeyboard(chatId, "Sizda saralangan e'lon jo'qku \uD83D\uDE05", null);
+            botCallback.deleteMessageLater(chatId, message.getMessageId(), 5);
         }
     }
 }

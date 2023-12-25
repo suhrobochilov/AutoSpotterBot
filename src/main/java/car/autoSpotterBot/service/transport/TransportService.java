@@ -9,11 +9,13 @@ import car.autoSpotterBot.model.transport.*;
 import car.autoSpotterBot.service.AdService;
 import car.autoSpotterBot.service.BotUserService;
 import car.autoSpotterBot.service.StandortService;
+import car.autoSpotterBot.util.MessageId;
 import car.autoSpotterBot.util.transportUtils.AutoInterpreter;
 import car.autoSpotterBot.util.transportUtils.BotCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import java.util.*;
@@ -33,10 +35,11 @@ public class TransportService {
     private final OtherTransportService otherTransService;
     private final SparePartsService sparePartsService;
     private final BotCallback botCallback;
+    private final MessageId messageIds;
     private final Map<Long, Integer> photoIndexMap = new HashMap<>();
     public Map<Long, Integer> userPageState = new HashMap<>();
 
-    public TransportService(BotUserService userService, Button button, StandortService standortService, AutomobileService automobileService, TruckService truckService, AgroTechnologyService agroTechService, AdService adService, OtherTransportService otherTransService, SparePartsService sparePartsService, BotCallback botCallback) {
+    public TransportService(BotUserService userService, Button button, StandortService standortService, AutomobileService automobileService, TruckService truckService, AgroTechnologyService agroTechService, AdService adService, OtherTransportService otherTransService, SparePartsService sparePartsService, BotCallback botCallback, MessageId messageIds) {
         this.userService = userService;
         this.button = button;
         this.standortService = standortService;
@@ -47,6 +50,7 @@ public class TransportService {
         this.otherTransService = otherTransService;
         this.sparePartsService = sparePartsService;
         this.botCallback = botCallback;
+        this.messageIds = messageIds;
     }
 
     public <T extends Ad> void searchAd(Long chatId, String searchText, Class<T> adClass) {
@@ -57,7 +61,8 @@ public class TransportService {
             ads = findAds(adClass, searchText);
         }
         if (ads.isEmpty()) {
-            botCallback.sendMessageWithInlKeyboard(chatId, "Birorta ham e'lon topilmadi \uD83D\uDE45\u200D♂\uFE0F", null);
+            Message message = botCallback.sendMessageWithInlKeyboard(chatId, "Birorta ham e'lon topilmadi \uD83D\uDE45\u200D♂\uFE0F", null);
+            botCallback.deleteMessageLater(chatId,message.getMessageId(),5);
             return;
         }
         displayAdsAtSearch(chatId, ads);
@@ -105,32 +110,10 @@ public class TransportService {
         currentTransport.setStandort(standort);
     }
 
-    public void getMyFavorite(Long chatId) {
-        List<Automobile> favoriteAutomobiles = automobileService.getFavoritesByUserId(chatId);
-        displayMyFavorites(chatId, favoriteAutomobiles);
-
-        List<Truck> favoriteTrucks = truckService.getFavoritesByUserId(chatId);
-        displayMyFavorites(chatId, favoriteTrucks);
-
-        List<AgroTechnology> favoriteAgroTechs = agroTechService.getFavoritesByUserId(chatId);
-        displayMyFavorites(chatId, favoriteAgroTechs);
-
-        List<SpareParts> spareParts = sparePartsService.getFavoritesByUserId(chatId);
-        displayMyFavorites(chatId, spareParts);
-
-        List<OtherTransport> otherTransports = otherTransService.getFavoritesByUserId(chatId);
-        displayMyFavorites(chatId, otherTransports);
-    }
-
     public void getNextPhoto(Long chatId, String text, Integer messageId, Class<? extends Ad> adClass) {
         String[] parts = text.split("_");
         Long adId = Long.parseLong(parts[1]);
         Ad ad = getAdById(adId, adClass);
-
-        if (ad == null) {
-            // Behandlung von fehlenden Anzeigen ...
-            return;
-        }
 
         String captionText = ad.getDescription();
         List<String> imageUrls = ad.getImageUrl();
@@ -142,7 +125,6 @@ public class TransportService {
             if (imageUrls.size() >= 2) {
                 String nextImageUrl = imageUrls.get(nextIndex);
                 InlineKeyboardMarkup newKeyboard = button.inlKeyboardForAd(adId, nextIndex);
-                InlineKeyboardMarkup newKeyboard1 = button.inlKeyboardForMyAds(adId, nextIndex);
                 botCallback.editImageMessage(chatId, messageId, captionText, nextImageUrl, null, newKeyboard);
                 photoIndexMap.put(chatId, nextIndex);
             }
@@ -166,21 +148,16 @@ public class TransportService {
     public void saveUrl(String text, String photoUrl, String videoUrl, Ad currentAd) {
         if (photoUrl != null) {
             List<String> photoUrls = currentAd.getImageUrl();
-            if (photoUrl != null) {
-                if (photoUrls == null) {
-                    photoUrls = new ArrayList<>();
-                    currentAd.setImageUrl(photoUrls);
-                }
-                photoUrls.add(photoUrl);
+            if (photoUrls == null) {
+                photoUrls = new ArrayList<>();
+                currentAd.setImageUrl(photoUrls);
             }
-            if (text != null) {
-                currentAd.setDescription(text);
-            }
+            photoUrls.add(photoUrl);
         } else {
             currentAd.setVideoUrl(videoUrl);
-            if (text != null) {
-                currentAd.setDescription(text);
-            }
+        }
+        if (text != null) {
+            currentAd.setDescription(text);
         }
     }
 
@@ -199,48 +176,49 @@ public class TransportService {
         return null;
     }
 
-    private <T extends Ad> void displayMyFavorites(Long chatId, List<T> ads) {
-        if (!ads.isEmpty()) {
-            for (T ad : ads) {
-                String photoUrl = ad.getImageUrl().isEmpty() ? null : ad.getImageUrl().get(0);
-                String description = ad.getDescription();
-                botCallback.sendPhotoWithInlKeyboard(chatId, description, photoUrl, button.inlKeyboardMyFavorite(ad.getId(), null));
-            }
-        }
-    }
-
     private <T extends Ad> void displayAdsAtSearch(Long chatId, List<T> ads) {
-        Collections.reverse(ads);
+        deleteMessageLater(chatId, messageIds.getIdOfButton());
+        int totalAds = ads.size();
+        int totalPages = (totalAds + PAGE_SIZE - 1) / PAGE_SIZE;
         int currentPage = userPageState.getOrDefault(chatId, 1);
-        int startIndex = (currentPage - 1) * PAGE_SIZE;
-        int endIndex = Math.min(startIndex + PAGE_SIZE, ads.size());
+        int endIndex = totalAds - (currentPage - 1) * PAGE_SIZE;
+        int startIndex = Math.max(endIndex - PAGE_SIZE, 0);
         for (int i = startIndex; i < endIndex; i++) {
+            log.info("Ids: " + i);
             T ad = ads.get(i);
             getAd(chatId, ad);
         }
-        int totalAds = ads.size();
-        int totalPages = (totalAds + PAGE_SIZE - 1) / PAGE_SIZE;
         InlineKeyboardMarkup inlineKeyboard = button.createInlineKeyboardForPages(currentPage, totalPages);
         if (!ads.isEmpty()) {
-            botCallback.sendMessageWithInlKeyboard(chatId, "Keyingi e'lonlarni ko'rish uchun \uD83D\uDC47", inlineKeyboard);
+            Message message = botCallback.sendMessageWithInlKeyboard(chatId, "Keyingi e'lonlarni ko'rish uchun \uD83D\uDC47", inlineKeyboard);
+            messageIds.setIdOfButton(message.getMessageId());
         } else {
-            botCallback.sendMessageWithInlKeyboard(chatId, "Birorta ham e'lon topilmadi \uD83D\uDE45\u200D♂\uFE0F", null);
+            Message message = botCallback.sendMessageWithInlKeyboard(chatId, "Birorta ham e'lon topilmadi \uD83D\uDE45\u200D♂\uFE0F", null);
+            botCallback.deleteMessageLater(chatId, message.getMessageId(), 3);
         }
     }
 
+    public void displayNextPage(Long chatId, Class<? extends Ad> adClass, int requestedPage) {
+        List<? extends Ad> ads = getAdsByClass(adClass);
+        userPageState.put(chatId, requestedPage);
+        displayAdsAtSearch(chatId, ads);
+    }
+
     private <T extends Ad> void getAd(Long chatId, T ad) {
-        if (ad.getImageUrl() != null){
+        if (ad.getImageUrl() != null) {
             List<String> photoUrls = ad.getImageUrl();
             String photoUrl = ad.getImageUrl().isEmpty() ? null : ad.getImageUrl().get(0);
             String description = ad.getDescription();
             if (photoUrls != null && !photoUrls.isEmpty()) {
-                botCallback.sendPhotoWithInlKeyboard(chatId, "E'lon id raqami: " + ad.getId() + "\n" + description, photoUrl, button.inlKeyboardForAd(ad.getId(), null));
+                int id = botCallback.sendPhotoWithInlKeyboard(chatId, "E'lon id raqami: " + ad.getId() + "\n" + description, photoUrl, button.inlKeyboardForAd(ad.getId(), null));
+                messageIds.setIdOfAdsShown(id);
             }
         } else if (ad.getVideoUrl() != null) {
             String videoUrl = ad.getVideoUrl();
             String description = ad.getDescription();
-            botCallback.sendVideoWithInlKeyboard(chatId, "E'lon id raqami: " + ad.getId() + "\n" + description, videoUrl, button.inlKeyboardForAd(ad.getId(), null));
-        }else {
+            int id = botCallback.sendVideoWithInlKeyboard(chatId, "E'lon id raqami: " + ad.getId() + "\n" + description, videoUrl, button.inlKeyboardForAd(ad.getId(), null));
+            messageIds.setIdOfAdsShown(id);
+        } else {
             adService.deleteById(ad.getId());
         }
     }
@@ -259,8 +237,9 @@ public class TransportService {
         } else if (currentAd instanceof OtherTransport) {
             otherTransService.saveOtherTech((OtherTransport) currentAd);
         }
-        botCallback.sendMessageWithInlKeyboard(chatId, "E'lon muvaffaqiyatli joylandi \uD83D\uDC4F" + "\n" + "yana e'lon joylash uchun " +
+        Message message = botCallback.sendMessageWithInlKeyboard(chatId, "E'lon muvaffaqiyatli joylandi \uD83D\uDC4F" + "\n" + "yana e'lon joylash uchun " +
                 "boshidan boshlang \uD83D\uDE1C", null);
+        botCallback.deleteMessageLater(chatId, message.getMessageId(), 5);
     }
 
     public void addToFavorite(Long chatId, String callbackData, Class<? extends Ad> adClass) {
@@ -289,14 +268,9 @@ public class TransportService {
         if (deleted) {
             botCallback.deleteMessage(chatId, messageId);
         } else {
-            botCallback.sendMessageWithInlKeyboard(chatId, "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.", null);
+            Message message = botCallback.sendMessageWithInlKeyboard(chatId, "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.", null);
+            botCallback.deleteMessageLater(chatId, message.getMessageId(), 5);
         }
-    }
-
-    public void displayNextPage(Long chatId, Class<? extends Ad> adClass, int requestedPage) {
-        List<? extends Ad> ads = getAdsByClass(adClass);
-        userPageState.put(chatId, requestedPage);
-        displayAdsAtSearch(chatId, ads);
     }
 
     private List<? extends Ad> getAdsByClass(Class<? extends Ad> adClass) {
@@ -314,32 +288,6 @@ public class TransportService {
         return Collections.emptyList();
     }
 
-
-    public void displayPreviousPage(Long chatId, Class<? extends Ad> adClass) {
-        List<? extends Ad> ads;
-
-        if (adClass.equals(Automobile.class)) {
-            ads = automobileService.findAll();
-        } else if (adClass.equals(Truck.class)) {
-            ads = truckService.findAll(); // TruckService Beispiel
-        } else if (adClass.equals(AgroTechnology.class)) {
-            ads = agroTechService.findAll(); // AgroTechService Beispiel
-        } else if (adClass.equals(OtherTransport.class)) {
-            ads = otherTransService.findAll();
-        } else if (adClass.equals(SpareParts.class)) {
-            ads = sparePartsService.findAll();
-        } else {
-            ads = Collections.emptyList();
-        }
-        int currentIndex = userPageState.getOrDefault(chatId, ads.size());
-        if (currentIndex > 0) {
-            displayAdsAtSearch(chatId, ads);
-            botCallback.sendMessageWithReplyKeyboard(chatId, "Keyingi e'lonlarni ko'rish uchun \uD83D\uDC47", button.nextPage());
-        } else {
-            botCallback.sendMessageWithInlKeyboard(chatId, "Jo'q boshqa e'lon-pelon! \uD83D\uDE04", null);
-        }
-    }
-
     public void deleteAdFromFavorite(long chatId, String callbackData, int messageId) {
         String[] parts = callbackData.split("_");
         Long adId = Long.parseLong(parts[1]);
@@ -347,4 +295,9 @@ public class TransportService {
         botCallback.deleteMessage(chatId, messageId);
     }
 
+    private void deleteMessageLater(long chatId, Integer id) {
+        if (id != 0) {
+            botCallback.deleteMessageLater(chatId, id, 2);
+        }
+    }
 }

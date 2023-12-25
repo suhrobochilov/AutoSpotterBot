@@ -9,6 +9,7 @@ import car.autoSpotterBot.state.UserStateTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import java.util.Map;
@@ -47,10 +48,7 @@ public class AutoInterpreter {
                 transportService.displayNextPage(chatId, Automobile.class, id);
                 userStateManager.setUserSubStatus(chatId, PLACE_AD);
             }
-            if (text.equals(ButtonConstant.previousPage)) {
-                transportService.displayPreviousPage(chatId, Automobile.class);
-                userStateManager.setUserSubStatus(chatId, PLACE_AD);
-            }
+
             if (text.startsWith(ButtonConstant.nextPhoto) || text.startsWith(ButtonConstant.previousPhoto) ||
                     text.startsWith(ButtonConstant.video) || text.startsWith(ButtonConstant.favorite)) {
                 transportService.getNextPhoto(chatId, text, messageId, Automobile.class);
@@ -82,6 +80,7 @@ public class AutoInterpreter {
             savePhotoUrl(chatId, messageId, text, photoUrl, currentAd);
         }
         if (videoUrl != null && userStateManager.getUserSubStatus(chatId) != null) {
+            botCallback.deleteMessageLater(chatId,messageId, 3);
             saveVideoUrl(chatId, messageId, text, videoUrl, currentAd);
         }
     }
@@ -147,7 +146,8 @@ public class AutoInterpreter {
 
     private void cancelAutoAd(Long chatId, int messageId) {
         currentAdAuto.remove(chatId);
-        botCallback.sendMessageWithInlKeyboard(chatId, "E'lon bekor qilindi", null);
+        Message message = botCallback.sendMessageWithInlKeyboard(chatId, "E'lon bekor qilindi", null);
+        botCallback.deleteMessageLater(chatId,message.getMessageId(),5);
         currentAdAuto.clear();
         userStateManager.setUserSubStatus(chatId, null);
         userStateTransport.setUserStateAuto(chatId, null);
