@@ -1,14 +1,14 @@
-package car.autoSpotterBot.service.transport;
+package car.autoSpotterBot.service;
 
 import car.autoSpotterBot.button.Button;
 import car.autoSpotterBot.button.ButtonConstant;
 import car.autoSpotterBot.model.Ad;
 import car.autoSpotterBot.model.BotUser;
 import car.autoSpotterBot.model.Standort;
+import car.autoSpotterBot.model.realeState.*;
 import car.autoSpotterBot.model.transport.*;
-import car.autoSpotterBot.service.AdService;
-import car.autoSpotterBot.service.BotUserService;
-import car.autoSpotterBot.service.StandortService;
+import car.autoSpotterBot.service.realEstate.*;
+import car.autoSpotterBot.service.transport.*;
 import car.autoSpotterBot.util.MessageId;
 import car.autoSpotterBot.util.transportUtils.AutoInterpreter;
 import car.autoSpotterBot.util.transportUtils.BotCallback;
@@ -22,7 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class TransportService {
+public class GeneralService {
     private static final Logger log = LoggerFactory.getLogger(AutoInterpreter.class);
     private static final int PAGE_SIZE = 10;
     private final BotUserService userService;
@@ -34,12 +34,18 @@ public class TransportService {
     private final AdService adService;
     private final OtherTransportService otherTransService;
     private final SparePartsService sparePartsService;
+    private final ApartmentService apartmentService;
+    private final BuildingLotService buildingLotService;
+    private final BusinessPremiseService businessPremiseService;
+    private final HouseService houseService;
+    private final ParkingSpaceService parkingSpaceService;
+    private final RentalHomeService rentalHomeService;
     private final BotCallback botCallback;
     private final MessageId messageIds;
     private final Map<Long, Integer> photoIndexMap = new HashMap<>();
     public Map<Long, Integer> userPageState = new HashMap<>();
 
-    public TransportService(BotUserService userService, Button button, StandortService standortService, AutomobileService automobileService, TruckService truckService, AgroTechnologyService agroTechService, AdService adService, OtherTransportService otherTransService, SparePartsService sparePartsService, BotCallback botCallback, MessageId messageIds) {
+    public GeneralService(BotUserService userService, Button button, StandortService standortService, AutomobileService automobileService, TruckService truckService, AgroTechnologyService agroTechService, AdService adService, OtherTransportService otherTransService, SparePartsService sparePartsService, ApartmentService apartmentService, BuildingLotService buildingLotService, BusinessPremiseService businessPremiseService, HouseService houseService, ParkingSpaceService parkingSpaceService, RentalHomeService rentalHomeService, BotCallback botCallback, MessageId messageIds) {
         this.userService = userService;
         this.button = button;
         this.standortService = standortService;
@@ -49,20 +55,22 @@ public class TransportService {
         this.adService = adService;
         this.otherTransService = otherTransService;
         this.sparePartsService = sparePartsService;
+        this.apartmentService = apartmentService;
+        this.buildingLotService = buildingLotService;
+        this.businessPremiseService = businessPremiseService;
+        this.houseService = houseService;
+        this.parkingSpaceService = parkingSpaceService;
+        this.rentalHomeService = rentalHomeService;
         this.botCallback = botCallback;
         this.messageIds = messageIds;
     }
 
     public <T extends Ad> void searchAd(Long chatId, String searchText, Class<T> adClass) {
-        List<T> ads;
-        if ("Hammasini ko'rsatish".equals(searchText)) {
-            ads = findAllAds(adClass);
-        } else {
-            ads = findAds(adClass, searchText);
-        }
+        List<T> ads = findAds(adClass, searchText);
+
         if (ads.isEmpty()) {
             Message message = botCallback.sendMessageWithInlKeyboard(chatId, "Birorta ham e'lon topilmadi \uD83D\uDE45\u200D♂\uFE0F", null);
-            botCallback.deleteMessageLater(chatId,message.getMessageId(),5);
+            botCallback.deleteMessageLater(chatId, message.getMessageId(), 5);
             return;
         }
         displayAdsAtSearch(chatId, ads);
@@ -79,21 +87,18 @@ public class TransportService {
             return castList(sparePartsService.findByStandort(stadtName), adClass);
         } else if (OtherTransport.class.equals(adClass)) {
             return castList(otherTransService.findByStandort(stadtName), adClass);
-        }
-        return new ArrayList<>();
-    }
-
-    private <T extends Ad> List<T> findAllAds(Class<T> adClass) {
-        if (Automobile.class.equals(adClass)) {
-            return castList(automobileService.findAll(), adClass);
-        } else if (Truck.class.equals(adClass)) {
-            return castList(truckService.findAll(), adClass);
-        } else if (AgroTechnology.class.equals(adClass)) {
-            return castList(agroTechService.findAll(), adClass);
-        } else if (SpareParts.class.equals(adClass)) {
-            return castList(sparePartsService.findAll(), adClass);
-        } else if (OtherTransport.class.equals(adClass)) {
-            return castList(otherTransService.findAll(), adClass);
+        } else if (Apartment.class.equals(adClass)) {
+            return castList(apartmentService.findByStandort(stadtName), adClass);
+        } else if (ParkingSpace.class.equals(adClass)) {
+            return castList(parkingSpaceService.findByStandort(stadtName), adClass);
+        } else if (House.class.equals(adClass)) {
+            return castList(houseService.findByStandort(stadtName), adClass);
+        } else if (BuildingLot.class.equals(adClass)) {
+            return castList(buildingLotService.findByStandort(stadtName), adClass);
+        } else if (RentalHome.class.equals(adClass)) {
+            return castList(rentalHomeService.findByStandort(stadtName), adClass);
+        } else if (BusinessPremise.class.equals(adClass)) {
+            return castList(businessPremiseService.findByStandort(stadtName), adClass);
         }
         return new ArrayList<>();
     }
@@ -115,6 +120,7 @@ public class TransportService {
         Long adId = Long.parseLong(parts[1]);
         Ad ad = getAdById(adId, adClass);
 
+        assert ad != null;
         String captionText = ad.getDescription();
         List<String> imageUrls = ad.getImageUrl();
         String videoUrl = ad.getVideoUrl();
@@ -184,7 +190,6 @@ public class TransportService {
         int endIndex = totalAds - (currentPage - 1) * PAGE_SIZE;
         int startIndex = Math.max(endIndex - PAGE_SIZE, 0);
         for (int i = startIndex; i < endIndex; i++) {
-            log.info("Ids: " + i);
             T ad = ads.get(i);
             getAd(chatId, ad);
         }
@@ -236,6 +241,18 @@ public class TransportService {
             sparePartsService.saveSpareParts((SpareParts) currentAd);
         } else if (currentAd instanceof OtherTransport) {
             otherTransService.saveOtherTech((OtherTransport) currentAd);
+        }else  if (currentAd instanceof Apartment) {
+            apartmentService.saveApartment((Apartment) currentAd);
+        } else if (currentAd instanceof ParkingSpace) {
+            parkingSpaceService.saveGarage((ParkingSpace) currentAd);
+        } else if (currentAd instanceof House) {
+            houseService.saveHouse((House) currentAd);
+        }else if (currentAd instanceof BuildingLot) {
+            buildingLotService.savePlot((BuildingLot) currentAd);
+        }else if (currentAd instanceof BusinessPremise) {
+            businessPremiseService.savePremise((BusinessPremise) currentAd);
+        } else if (currentAd instanceof RentalHome) {
+            rentalHomeService.saveRentHouse((RentalHome)currentAd);
         }
         Message message = botCallback.sendMessageWithInlKeyboard(chatId, "E'lon muvaffaqiyatli joylandi \uD83D\uDC4F" + "\n" + "yana e'lon joylash uchun " +
                 "boshidan boshlang \uD83D\uDE1C", null);
@@ -256,6 +273,18 @@ public class TransportService {
             otherTransService.addFavorite(chatId, adId);
         } else if (adClass.equals(SpareParts.class)) {
             sparePartsService.addFavorite(chatId, adId);
+        }else if (adClass.equals(Apartment.class)) {
+            apartmentService.addFavorite(chatId, adId);
+        } else if (adClass.equals(ParkingSpace.class)) {
+            parkingSpaceService.addFavorite(chatId, adId);
+        } else if (adClass.equals(House.class)) {
+            houseService.addFavorite(chatId, adId);
+        } else if (adClass.equals(BuildingLot.class)) {
+            buildingLotService.addFavorite(chatId,adId);
+        }else if (adClass.equals(BusinessPremise.class)) {
+            businessPremiseService.addFavorite(chatId,adId);
+        }else if (adClass.equals(RentalHome.class)) {
+            rentalHomeService.addFavorite(chatId,adId);
         }
         userService.save(user);
     }

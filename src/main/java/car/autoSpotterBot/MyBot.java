@@ -6,7 +6,7 @@ import car.autoSpotterBot.configuration.BotConfig;
 import car.autoSpotterBot.model.BotUser;
 import car.autoSpotterBot.service.AdService;
 import car.autoSpotterBot.service.BotUserService;
-import car.autoSpotterBot.service.transport.TransportService;
+import car.autoSpotterBot.service.GeneralService;
 import car.autoSpotterBot.state.UserStateConstants;
 import car.autoSpotterBot.state.UserStateManager;
 import car.autoSpotterBot.state.UserStateRealEstate;
@@ -59,7 +59,7 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
     private AdService adService;
     private TransportInterpreter transportInterpreter;
     private RealEstateInterpreter realEstateInterpreter;
-    private TransportService transportService;
+    private GeneralService generalService;
 
 
     public MyBot(BotUserService userService, Button buttonService, UserStateManager userStateManager, UserStateTransport userStateTransport, UserStateRealEstate userStateRealEstate, BotConfig botConfig, MessageId allMessageIds) {
@@ -92,8 +92,8 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
 
     @Autowired
     @Lazy
-    public void setTransportService(TransportService transportService) {
-        this.transportService = transportService;
+    public void setTransportService(GeneralService generalService) {
+        this.generalService = generalService;
     }
 
     @Override
@@ -110,7 +110,7 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
                 saveNewUser(chatId, firstName, lastName, userName);
             }
             switch (text) {
-                case "/start" -> start(chatId,messageId);
+                case "/start" -> start(chatId, messageId);
                 case ButtonConstant.myAds -> myAds(chatId, messageId);
                 case ButtonConstant.myFavorite -> myFavorite(chatId, messageId);
                 case ButtonConstant.back -> back(chatId);
@@ -147,6 +147,7 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
             long chatId = update.getCallbackQuery().getFrom().getId();
             String callbackData = update.getCallbackQuery().getData();
             int messageId = update.getCallbackQuery().getMessage().getMessageId();
+
             if (callbackData.equals(ButtonConstant.mainMenu)) {
                 mainMenu(chatId, messageId);
             }
@@ -157,30 +158,18 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
                 realEstateInterpreter.interpreter(update);
             }
             if (callbackData.equals(ButtonConstant.transport)) {
-                InlineKeyboardMarkup newKeyboard = button.transMenu();
-                if (userStateManager.getUserSubStatus(chatId).equals(PLACE_AD)) {
-                    editMessage(chatId, messageId, "Qaysi transport uchun e'lon bermoqchisiz?", newKeyboard);
-                } else {
-                    editMessage(chatId, messageId, "Qanaqa transport vositasini qidiryapsiz?", newKeyboard);
-                }
-                userStateManager.setUserMainStatus(chatId, TRANSPORT);
-            } else if (callbackData.equals(ButtonConstant.realEstate)) {
-                InlineKeyboardMarkup newKeyboard = button.realEstateMenu();
-                if (userStateManager.getUserSubStatus(chatId).equals(PLACE_AD)) {
-                    editMessage(chatId, messageId, "Qanday ko'chmas mulk uchun e'lon bermoqchisiz?", newKeyboard);
-                } else {
-                    editMessage(chatId, messageId, "Qanday ko'chmas mulk qidiryapsiz?", newKeyboard);
-                }
-                userStateManager.setUserMainStatus(chatId, REAL_ESTATE);
+                handleTransport(chatId, messageId);
+            }
+            if (callbackData.equals(ButtonConstant.realEstate)) {
+                handleRealEstate(chatId, messageId);
             }
             if (callbackData.startsWith(ButtonConstant.deleteAd)) {
-                transportService.deleteAd(chatId, callbackData, messageId);
+                generalService.deleteAd(chatId, callbackData, messageId);
             }
             if (callbackData.startsWith(ButtonConstant.deleteAdFromFavorite)) {
-                transportService.deleteAdFromFavorite(chatId, callbackData, messageId);
+                generalService.deleteAdFromFavorite(chatId, callbackData, messageId);
             }
         }
-
     }
 
     private void placeAd(long chatId, int messageId) {
@@ -225,12 +214,33 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
         sendMessageWithReplyKeyboard(chatId, "Asosiy menu", button.startMenu());
         setUserState(chatId, START, null, null, null);
     }
-    private void mainMenu(long chatId, int messageId){
+
+    private void mainMenu(long chatId, int messageId) {
         InlineKeyboardMarkup newButton = button.mainMenu();
         editMessage(chatId, messageId, MessageText.placeAdMessage, newButton);
         userStateManager.setUserMainStatus(chatId, START);
         userStateTransport.setUserStatusTransport(chatId, null);
-        setUserState(chatId,START,this.userStateManager.getUserSubStatus(chatId),null,null);
+        setUserState(chatId, START, this.userStateManager.getUserSubStatus(chatId), null, null);
+    }
+
+    private void handleTransport(long chatId, int messageId) {
+        InlineKeyboardMarkup newKeyboard = button.transMenu();
+        if (userStateManager.getUserSubStatus(chatId).equals(PLACE_AD)) {
+            editMessage(chatId, messageId, "Qaysi transport uchun e'lon bermoqchisiz?", newKeyboard);
+        } else {
+            editMessage(chatId, messageId, "Qanaqa transport vositasini qidiryapsiz?", newKeyboard);
+        }
+        userStateManager.setUserMainStatus(chatId, TRANSPORT);
+    }
+
+    private void handleRealEstate(long chatId, int messageId) {
+        InlineKeyboardMarkup newKeyboard = button.realEstateMenu();
+        if (userStateManager.getUserSubStatus(chatId).equals(PLACE_AD)) {
+            editMessage(chatId, messageId, "Qanday ko'chmas mulk uchun e'lon bermoqchisiz?", newKeyboard);
+        } else {
+            editMessage(chatId, messageId, "Qanday ko'chmas mulk qidiryapsiz?", newKeyboard);
+        }
+        userStateManager.setUserMainStatus(chatId, REAL_ESTATE);
     }
 
     private void setUserState(long chatId, UserStateConstants userMainState, UserStateConstants userSubState,
@@ -278,7 +288,6 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
             allMessageIds.setIdPlaceAdButton(0);
         }
     }
-
 
     private void saveNewUser(Long chatId, String firstName, String lastName, String userName) {
         BotUser newUser = new BotUser();
@@ -417,7 +426,7 @@ public class MyBot extends TelegramLongPollingBot implements BotCallback {
             Message response = execute(sendPhoto);
             return response.getMessageId();
         } catch (TelegramApiException e) {
-            log.error("Fehler beim Senden des Fotos: ", e);
+            log.error("Error on sending photos: ", e);
             return null;
         }
 

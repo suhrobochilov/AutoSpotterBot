@@ -53,7 +53,7 @@ public class TransportInterpreter {
                 String photoUrl = largestPhoto.getFileId();
                 String caption = update.getMessage().getCaption();
                 if (userStateTransport.getUserStatusTransport(chatId).equals(AUTOMOBIL)) {
-                    autoInterpreter.autointerpreter(chatId, messageId, caption, photoUrl, null);
+                    autoInterpreter.interpreter(chatId, messageId, caption, photoUrl, null);
                 } else if (userStateTransport.getUserStatusTransport(chatId).equals(TRUCK)) {
                     truckInterpreter.interpreter(chatId,messageId,caption,photoUrl,null);
                 } else if (userStateTransport.getUserStatusTransport(chatId).equals(AGRO_TECH)) {
@@ -69,7 +69,7 @@ public class TransportInterpreter {
                 String videoUrl = video.getFileId();
                 String caption = update.getMessage().getCaption();
                 if (userStateTransport.getUserStatusTransport(chatId).equals(AUTOMOBIL)) {
-                    autoInterpreter.autointerpreter(chatId, messageId, caption, null, videoUrl);
+                    autoInterpreter.interpreter(chatId, messageId, caption, null, videoUrl);
                 }else if (userStateTransport.getUserStatusTransport(chatId).equals(TRUCK)) {
                     truckInterpreter.interpreter(chatId,messageId,caption,null,videoUrl);
                 } else if (userStateTransport.getUserStatusTransport(chatId).equals(AGRO_TECH)) {
@@ -88,7 +88,7 @@ public class TransportInterpreter {
             String text = update.getCallbackQuery().getData();
             if (userStateTransport.getUserStatusTransport(chatId) != null &&
                     userStateTransport.getUserStatusTransport(chatId).equals(AUTOMOBIL)) {
-                autoInterpreter.autointerpreter(chatId, messageId, text, null, null);
+                autoInterpreter.interpreter(chatId, messageId, text, null, null);
             } else if (userStateTransport.getUserStatusTransport(chatId) != null &&
                     userStateTransport.getUserStatusTransport(chatId).equals(TRUCK)) {
                 truckInterpreter.interpreter(chatId,messageId,text,null,null);

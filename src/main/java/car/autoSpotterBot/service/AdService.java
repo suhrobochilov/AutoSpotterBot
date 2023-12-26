@@ -14,8 +14,11 @@ import car.autoSpotterBot.service.realEstate.ApartmentService;
 import car.autoSpotterBot.service.realEstate.HouseService;
 import car.autoSpotterBot.service.transport.*;
 import car.autoSpotterBot.util.MessageId;
+import car.autoSpotterBot.util.transportUtils.AgroTechInterpreter;
 import car.autoSpotterBot.util.transportUtils.BotCallback;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Message;
 
@@ -24,6 +27,7 @@ import java.util.List;
 
 @Service
 public class AdService {
+    private static final Logger log = LoggerFactory.getLogger(AdService.class);
     private final TransportRepository transportRepository;
     private final FavoritRepository favoritRepository;
     private final BotUserRepository botUserRepository;
@@ -56,23 +60,31 @@ public class AdService {
     }
 
     public boolean deleteById(Long id) {
-        if (!transportRepository.existsById(id)) {
-            throw new AdNotFoundException(id);
+        try {
+            if (!transportRepository.existsById(id)) {
+                throw new AdNotFoundException(id);
+            }
+            List<Favorit> favoriten = favoritRepository.findByTransportId(id);
+            favoritRepository.deleteAll(favoriten);
+            transportRepository.deleteById(id);
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException("Error deleting the ad: " + e.getMessage(), e);
         }
-        List<Favorit> favoriten = favoritRepository.findByTransportId(id);
-        favoritRepository.deleteAll(favoriten);
-
-        transportRepository.deleteById(id);
-        return true;
     }
+
 
     @Transactional
     public void removeFromFavorite(long chatId, Long adId) {
-        BotUser user = botUserRepository.findByTelegramId(chatId);
-        if (user == null) {
-            throw new RuntimeException("User nicht gefunden");
+        try {
+            BotUser user = botUserRepository.findByTelegramId(chatId);
+            if (user == null) {
+                throw new RuntimeException("User not found");
+            }
+            favoritRepository.deleteByUserIdAndTransportId(user.getId(), adId);
+        } catch (Exception e) {
+            log.error("Error removing from favorites: " + e.getMessage());
         }
-        favoritRepository.deleteByUserIdAndTransportId(user.getId(), adId);
     }
 
     public void getMyAds(Long chatId) {

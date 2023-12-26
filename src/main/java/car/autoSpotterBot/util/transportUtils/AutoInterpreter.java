@@ -3,7 +3,7 @@ package car.autoSpotterBot.util.transportUtils;
 import car.autoSpotterBot.button.Button;
 import car.autoSpotterBot.button.ButtonConstant;
 import car.autoSpotterBot.model.transport.Automobile;
-import car.autoSpotterBot.service.transport.TransportService;
+import car.autoSpotterBot.service.GeneralService;
 import car.autoSpotterBot.state.UserStateManager;
 import car.autoSpotterBot.state.UserStateTransport;
 import org.slf4j.Logger;
@@ -22,22 +22,22 @@ public class AutoInterpreter {
     private static final Logger log = LoggerFactory.getLogger(AutoInterpreter.class);
     private final Button button;
     private final BotCallback botCallback;
-    private final TransportService transportService;
+    private final GeneralService generalService;
     private final UserStateManager userStateManager;
-    private final Map<Long, Automobile> currentAdAuto = new ConcurrentHashMap<>();
+    private final Map<Long, Automobile> currentAd = new ConcurrentHashMap<>();
     private final UserStateTransport userStateTransport;
 
-    public AutoInterpreter(Button button, BotCallback botCallback, TransportService transportService, UserStateManager userStateManager, UserStateTransport userStateTransport) {
+    public AutoInterpreter(Button button, BotCallback botCallback, GeneralService generalService, UserStateManager userStateManager, UserStateTransport userStateTransport) {
         this.button = button;
         this.botCallback = botCallback;
-        this.transportService = transportService;
+        this.generalService = generalService;
         this.userStateManager = userStateManager;
         this.userStateTransport = userStateTransport;
     }
 
-    public void autointerpreter(long chatId, int messageId, String text, String photoUrl, String videoUrl) {
+    public void interpreter(long chatId, int messageId, String text, String photoUrl, String videoUrl) {
 
-        Automobile currentAd = currentAdAuto.getOrDefault(chatId, new Automobile());
+        Automobile currentAd = this.currentAd.getOrDefault(chatId, new Automobile());
         if (text != null) {
             if (text.equals(ButtonConstant.backInAutoAd)) {
                 InlineKeyboardMarkup newButton = button.transMenu();
@@ -45,21 +45,20 @@ public class AutoInterpreter {
             }
             if (text.startsWith("page")) {
                 int id = splitText(text);
-                transportService.displayNextPage(chatId, Automobile.class, id);
+                generalService.displayNextPage(chatId, Automobile.class, id);
                 userStateManager.setUserSubStatus(chatId, PLACE_AD);
             }
-
             if (text.startsWith(ButtonConstant.nextPhoto) || text.startsWith(ButtonConstant.previousPhoto) ||
                     text.startsWith(ButtonConstant.video) || text.startsWith(ButtonConstant.favorite)) {
-                transportService.getNextPhoto(chatId, text, messageId, Automobile.class);
+                generalService.getNextPhoto(chatId, text, messageId, Automobile.class);
                 userStateManager.setUserSubStatus(chatId, PLACE_AD);
             }
             if (text.startsWith(ButtonConstant.favorite)) {
-                transportService.addToFavorite(chatId, text, Automobile.class);
+                generalService.addToFavorite(chatId, text, Automobile.class);
                 userStateManager.setUserSubStatus(chatId, PLACE_AD);
             }
             if (userStateManager.getUserSubStatus(chatId) != null && userStateManager.getUserSubStatus(chatId).equals(SEARCH_AD) && !text.equals(ButtonConstant.backInAutoAd)) {
-                transportService.searchAd(chatId, text, Automobile.class);
+                generalService.searchAd(chatId, text, Automobile.class);
             }
             if (userStateManager.getUserSubStatus(chatId) != null && !userStateManager.getUserSubStatus(chatId).equals(SEARCH_AD)) {
                 saveLocation(chatId, messageId, text, currentAd);
@@ -100,11 +99,10 @@ public class AutoInterpreter {
     }
 
     private void savePhotoUrl(long chatId, int messageId, String text, String photoUrl, Automobile currentAd) {
-        log.info("userState in Foto: "+ userStateTransport.getUserStateAuto(chatId));
         if (text != null) {
             botCallback.sendPhotoWithInlKeyboard(chatId, currentAd.getDescription(), photoUrl, button.inlKeyboardConfirmation());
             userStateTransport.setUserStateAuto(chatId, PHOTO);
-            transportService.saveUrl(text, photoUrl, null, currentAd);
+            generalService.saveUrl(text, photoUrl, null, currentAd);
         }
         if (userStateTransport.getUserStateAuto(chatId) == null || !userStateTransport.getUserStateAuto(chatId).equals(EMPTY) &&
                 !userStateTransport.getUserStateAuto(chatId).equals(PHOTO) && !userStateTransport.getUserStateAuto(chatId).equals(VIDEO)) {
@@ -113,16 +111,15 @@ public class AutoInterpreter {
         }
         if (userStateTransport.getUserStateAuto(chatId) != null && userStateTransport.getUserStateAuto(chatId).equals(PHOTO) ||
                 userStateTransport.getUserStateAuto(chatId).equals(VIDEO)) {
-            transportService.saveUrl(text, photoUrl, null, currentAd);
+            generalService.saveUrl(text, photoUrl, null, currentAd);
         }
     }
 
     private void saveVideoUrl(long chatId, int messageId, String text, String videoUrl, Automobile currentAd) {
-        log.info("UserState in Video: " + userStateTransport.getUserStateAuto(chatId));
         if (text != null) {
             botCallback.sendVideoWithInlKeyboard(chatId, currentAd.getDescription(), videoUrl, button.inlKeyboardConfirmation());
             userStateTransport.setUserStateAuto(chatId, VIDEO);
-            transportService.saveUrl(text, null, videoUrl, currentAd);
+            generalService.saveUrl(text, null, videoUrl, currentAd);
         }
         if (userStateTransport.getUserStateAuto(chatId) == null || !userStateTransport.getUserStateAuto(chatId).equals(EMPTY) &&
                 !userStateTransport.getUserStateAuto(chatId).equals(PHOTO) && !userStateTransport.getUserStateAuto(chatId).equals(VIDEO)) {
@@ -131,24 +128,24 @@ public class AutoInterpreter {
         }
         if (userStateTransport.getUserStateAuto(chatId) != null && userStateTransport.getUserStateAuto(chatId).equals(PHOTO) ||
                 userStateTransport.getUserStateAuto(chatId).equals(VIDEO)) {
-            transportService.saveUrl(text, null, videoUrl, currentAd);
+            generalService.saveUrl(text, null, videoUrl, currentAd);
         }
     }
 
     private void confirmAd(long chatId, int messageId, Automobile currentAd) {
-        transportService.finalizeAndSaveAd(chatId, currentAd);
-        currentAdAuto.remove(chatId);
-        currentAdAuto.clear();
+        generalService.finalizeAndSaveAd(chatId, currentAd);
+        this.currentAd.remove(chatId);
+        this.currentAd.clear();
         userStateManager.setUserSubStatus(chatId, null);
         userStateTransport.setUserStateAuto(chatId, null);
         botCallback.deleteMessageLater(chatId,messageId,1);
     }
 
     private void cancelAutoAd(Long chatId, int messageId) {
-        currentAdAuto.remove(chatId);
+        currentAd.remove(chatId);
         Message message = botCallback.sendMessageWithInlKeyboard(chatId, "E'lon bekor qilindi", null);
         botCallback.deleteMessageLater(chatId,message.getMessageId(),5);
-        currentAdAuto.clear();
+        currentAd.clear();
         userStateManager.setUserSubStatus(chatId, null);
         userStateTransport.setUserStateAuto(chatId, null);
     }
@@ -157,8 +154,8 @@ public class AutoInterpreter {
         switch (text) {
             case "Toshkent", "Andijon", "Buxoro", "Farg'ona", "Jizzax", "Sirdaryo", "Namangan", "Samarqand",
                     "Xorazm", "Surxandaryo", "Qashqadaryo", "Qoraqalpog'iston", "Navoi" -> {
-                transportService.setStandort(text, currentAd);
-                currentAdAuto.put(chatId, currentAd);
+                generalService.setStandort(text, currentAd);
+                this.currentAd.put(chatId, currentAd);
                 botCallback.editMessage(chatId, messageId, MessageText.autoAdExample, null);
             }
         }
