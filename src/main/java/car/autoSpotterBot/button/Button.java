@@ -20,7 +20,7 @@ public class Button {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         List<InlineKeyboardButton> row1 = new ArrayList<>();
-        List<InlineKeyboardButton> row2 = new ArrayList<>();
+        //List<InlineKeyboardButton> row2 = new ArrayList<>();
         InlineKeyboardButton transport = new InlineKeyboardButton();
         InlineKeyboardButton realEstate = new InlineKeyboardButton();
         InlineKeyboardButton electronics = new InlineKeyboardButton();
@@ -35,10 +35,10 @@ public class Button {
         services.setCallbackData(ButtonConstant.service);
         row1.add(transport);
         row1.add(realEstate);
-        row2.add(electronics);
-        row2.add(services);
+       // row2.add(electronics);
+       // row2.add(services);
         rows.add(row1);
-        rows.add(row2);
+      //  rows.add(row2);
 
         inlineKeyboardMarkup.setKeyboard(rows);
         return inlineKeyboardMarkup;
