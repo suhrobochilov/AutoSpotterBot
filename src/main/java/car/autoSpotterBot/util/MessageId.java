@@ -1,75 +1,50 @@
 package car.autoSpotterBot.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class MessageId {
-    private final List<Integer> idFavoriteAds = new ArrayList<>();
-    private final List<Integer> idOfAdsShown = new ArrayList<>();
-    private final List<Integer> idOfMyAds = new ArrayList<>();
-    private int idSearchButton;
-    private int idPlaceAdButton;
-    private int idOfButton;
+    private static final Logger log = LoggerFactory.getLogger(MessageId.class);
+    private final Map<Long, Map<MessageType, List<Integer>>> messageIds = new HashMap<>();
+    private final List<MessageType> keyWordForMessageIds = new ArrayList<>();
 
-    public MessageId() {
+    public void setMessageId(Long chatId, MessageType type, Integer messageId) {
+        Map<MessageType, List<Integer>> messageTypeMap = messageIds.computeIfAbsent(chatId, k -> new HashMap<>());
+        List<Integer> messageIdList = messageTypeMap.computeIfAbsent(type, k -> new ArrayList<>());
+        messageIdList.add(messageId);
+        log.info("Added messageId {} for chatId {} and MessageType {}", messageId, chatId, type);
     }
 
-    public int getIdOfButton() {
-        return idOfButton;
+    public List<Integer> getMessageIds(Long chatId, MessageType type) {
+        Map<MessageType, List<Integer>> chatMessageIds = messageIds.get(chatId);
+        if (chatMessageIds != null) {
+            return chatMessageIds.getOrDefault(type, new ArrayList<>());
+        }
+        return new ArrayList<>();
     }
 
-    public void setIdOfButton(int idOfButton) {
-        this.idOfButton = idOfButton;
+    public void clearMessageIds(Long chatId, MessageType type) {
+        Map<MessageType, List<Integer>> chatMessageTypes = messageIds.get(chatId);
+        if (chatMessageTypes != null) {
+            chatMessageTypes.remove(type);
+            log.info("Cleared messageId for chatId {} and MessageType {}", chatId, type);
+        }
     }
 
-    public List<Integer> getIdOfAdsShown() {
-        return idOfAdsShown;
-    }
-
-    public void setIdOfAdsShown(Integer idOfAdsShown) {
-        this.idOfAdsShown.add(idOfAdsShown);
-    }
-
-    public List<Integer> getIdFavoriteAds() {
-        return idFavoriteAds;
-    }
-
-    public void setIdFavoriteAds(int idFavoriteAds) {
-        this.idFavoriteAds.add(idFavoriteAds);
-    }
-
-    public List<Integer> getIdOfMyAds() {
-        return idOfMyAds;
-    }
-
-    public void setIdOfMyAds(Integer idOfMyAds) {
-        this.idOfMyAds.add(idOfMyAds);
-    }
-
-    public Integer getIdSearchButton() {
-        return idSearchButton;
-    }
-
-    public void setIdSearchButton(int idSearchButton) {
-        this.idSearchButton = idSearchButton;
-    }
-
-    public void setIdSearchButton(Integer idSearchButton) {
-        this.idSearchButton = idSearchButton;
-    }
-
-    public Integer getIdPlaceAdButton() {
-        return idPlaceAdButton;
-    }
-
-    public void setIdPlaceAdButton(int idPlaceAdButton) {
-        this.idPlaceAdButton = idPlaceAdButton;
-    }
-
-    public void setIdPlaceAdButton(Integer idPlaceAdButton) {
-        this.idPlaceAdButton = idPlaceAdButton;
+    public List<MessageType> getKeyWordForMessageIds() {
+        if (keyWordForMessageIds.isEmpty()) {
+            keyWordForMessageIds.add(MessageType.ID_OF_MY_ADS);
+            keyWordForMessageIds.add(MessageType.ID_OF_SEARCHED_ADS);
+            keyWordForMessageIds.add(MessageType.ID_OF_SEARCH_BUTTON);
+            keyWordForMessageIds.add(MessageType.ID_OF_FAVORITED_ADS);
+            keyWordForMessageIds.add(MessageType.ID_OF_PLACE_AD_BUTTON);
+        }
+        return keyWordForMessageIds;
     }
 }

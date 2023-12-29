@@ -19,6 +19,8 @@ public enum UserStateConstants {
     BUSINESS_PREMISE,
     PHOTO,
     VIDEO,
-    EMPTY
+    EMPTY,
+    MY_AD,
+    MY_FAVOURITE
 
 }

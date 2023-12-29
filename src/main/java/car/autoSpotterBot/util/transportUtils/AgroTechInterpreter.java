@@ -70,17 +70,17 @@ public class AgroTechInterpreter {
                 confirmAd(chatId, messageId, currentAd);
             }
             if (text.equals(ButtonConstant.cancel)) {
-                cancelAutoAd(chatId, messageId);
+                cancelAutoAd(chatId);
             }
         }
 
         if (photoUrl != null && userStateManager.getUserSubStatus(chatId) != null) {
-            botCallback.deleteMessageLater(chatId,messageId, 3);
-            savePhotoUrl(chatId, messageId, text, photoUrl, currentAd);
+            botCallback.deleteMessageLater(chatId,messageId, 10);
+            savePhotoUrl(chatId, text, photoUrl, currentAd);
         }
         if (videoUrl != null && userStateManager.getUserSubStatus(chatId) != null) {
-            botCallback.deleteMessageLater(chatId,messageId, 3);
-            saveVideoUrl(chatId, messageId, text, videoUrl, currentAd);
+            botCallback.deleteMessageLater(chatId,messageId, 10);
+            saveVideoUrl(chatId, text, videoUrl, currentAd);
         }
     }
 
@@ -98,7 +98,7 @@ public class AgroTechInterpreter {
         return Integer.parseInt(parts[1]);
     }
 
-    private void savePhotoUrl(long chatId, int messageId, String text, String photoUrl, AgroTechnology currentAd) {
+    private void savePhotoUrl(long chatId, String text, String photoUrl, AgroTechnology currentAd) {
         if (text != null) {
             botCallback.sendPhotoWithInlKeyboard(chatId, currentAd.getDescription(), photoUrl, button.inlKeyboardConfirmation());
             userStateTransport.setUserStateAuto(chatId, PHOTO);
@@ -115,7 +115,7 @@ public class AgroTechInterpreter {
         }
     }
 
-    private void saveVideoUrl(long chatId, int messageId, String text, String videoUrl, AgroTechnology currentAd) {
+    private void saveVideoUrl(long chatId, String text, String videoUrl, AgroTechnology currentAd) {
         if (text != null) {
             botCallback.sendVideoWithInlKeyboard(chatId, currentAd.getDescription(), videoUrl, button.inlKeyboardConfirmation());
             userStateTransport.setUserStateAuto(chatId, VIDEO);
@@ -138,13 +138,13 @@ public class AgroTechInterpreter {
         this.currentAd.clear();
         userStateManager.setUserSubStatus(chatId, null);
         userStateTransport.setUserStateAuto(chatId, null);
-        botCallback.deleteMessageLater(chatId,messageId,1);
+        botCallback.deleteMessageLater(chatId,messageId,10);
     }
 
-    private void cancelAutoAd(Long chatId, int messageId) {
+    private void cancelAutoAd(Long chatId) {
         currentAd.remove(chatId);
         Message message = botCallback.sendMessageWithInlKeyboard(chatId, "E'lon bekor qilindi", null);
-        botCallback.deleteMessageLater(chatId,message.getMessageId(),5);
+        botCallback.deleteMessageLater(chatId,message.getMessageId(),10);
         currentAd.clear();
         userStateManager.setUserSubStatus(chatId, null);
         userStateTransport.setUserStateAuto(chatId, null);

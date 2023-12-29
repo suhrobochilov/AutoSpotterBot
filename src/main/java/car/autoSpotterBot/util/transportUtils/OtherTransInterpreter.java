@@ -20,7 +20,7 @@ import static car.autoSpotterBot.state.UserStateConstants.VIDEO;
 
 @Component
 public class OtherTransInterpreter {
-    private static final Logger log = LoggerFactory.getLogger(AutoInterpreter.class);
+    private static final Logger log = LoggerFactory.getLogger(OtherTransInterpreter.class);
     private final Button button;
     private final BotCallback botCallback;
     private final GeneralService generalService;
@@ -70,17 +70,17 @@ public class OtherTransInterpreter {
                 confirmAd(chatId, messageId, currentAd);
             }
             if (text.equals(ButtonConstant.cancel)) {
-                cancelAutoAd(chatId, messageId);
+                cancelAutoAd(chatId);
             }
         }
 
         if (photoUrl != null && userStateManager.getUserSubStatus(chatId) != null) {
-            botCallback.deleteMessageLater(chatId,messageId, 3);
-            savePhotoUrl(chatId, messageId, text, photoUrl, currentAd);
+            botCallback.deleteMessageLater(chatId,messageId, 10);
+            savePhotoUrl(chatId, text, photoUrl, currentAd);
         }
         if (videoUrl != null && userStateManager.getUserSubStatus(chatId) != null) {
-            botCallback.deleteMessageLater(chatId,messageId, 3);
-            saveVideoUrl(chatId, messageId, text, videoUrl, currentAd);
+            botCallback.deleteMessageLater(chatId,messageId, 10);
+            saveVideoUrl(chatId, text, videoUrl, currentAd);
         }
     }
 
@@ -98,7 +98,7 @@ public class OtherTransInterpreter {
         return Integer.parseInt(parts[1]);
     }
 
-    private void savePhotoUrl(long chatId, int messageId, String text, String photoUrl, OtherTransport currentAd) {
+    private void savePhotoUrl(long chatId,String text, String photoUrl, OtherTransport currentAd) {
         if (text != null) {
             botCallback.sendPhotoWithInlKeyboard(chatId, currentAd.getDescription(), photoUrl, button.inlKeyboardConfirmation());
             userStateTransport.setUserStateAuto(chatId, PHOTO);
@@ -115,7 +115,7 @@ public class OtherTransInterpreter {
         }
     }
 
-    private void saveVideoUrl(long chatId, int messageId, String text, String videoUrl, OtherTransport currentAd) {
+    private void saveVideoUrl(long chatId,String  text, String videoUrl, OtherTransport currentAd) {
         if (text != null) {
             botCallback.sendVideoWithInlKeyboard(chatId, currentAd.getDescription(), videoUrl, button.inlKeyboardConfirmation());
             userStateTransport.setUserStateAuto(chatId, VIDEO);
@@ -141,7 +141,7 @@ public class OtherTransInterpreter {
         botCallback.deleteMessageLater(chatId,messageId,1);
     }
 
-    private void cancelAutoAd(Long chatId, int messageId) {
+    private void cancelAutoAd(Long chatId) {
         currentAd.remove(chatId);
         Message message = botCallback.sendMessageWithInlKeyboard(chatId, "E'lon bekor qilindi", null);
         botCallback.deleteMessageLater(chatId,message.getMessageId(),5);

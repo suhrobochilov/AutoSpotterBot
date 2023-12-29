@@ -70,17 +70,17 @@ public class AutoInterpreter {
                 confirmAd(chatId, messageId, currentAd);
             }
             if (text.equals(ButtonConstant.cancel)) {
-                cancelAutoAd(chatId, messageId);
+                cancelAutoAd(chatId);
             }
         }
 
         if (photoUrl != null && userStateManager.getUserSubStatus(chatId) != null) {
             botCallback.deleteMessageLater(chatId,messageId, 3);
-            savePhotoUrl(chatId, messageId, text, photoUrl, currentAd);
+            savePhotoUrl(chatId, text, photoUrl, currentAd);
         }
         if (videoUrl != null && userStateManager.getUserSubStatus(chatId) != null) {
             botCallback.deleteMessageLater(chatId,messageId, 3);
-            saveVideoUrl(chatId, messageId, text, videoUrl, currentAd);
+            saveVideoUrl(chatId, text, videoUrl, currentAd);
         }
     }
 
@@ -98,7 +98,7 @@ public class AutoInterpreter {
         return Integer.parseInt(parts[1]);
     }
 
-    private void savePhotoUrl(long chatId, int messageId, String text, String photoUrl, Automobile currentAd) {
+    private void savePhotoUrl(long chatId,String text, String photoUrl, Automobile currentAd) {
         if (text != null) {
             botCallback.sendPhotoWithInlKeyboard(chatId, currentAd.getDescription(), photoUrl, button.inlKeyboardConfirmation());
             userStateTransport.setUserStateAuto(chatId, PHOTO);
@@ -115,7 +115,7 @@ public class AutoInterpreter {
         }
     }
 
-    private void saveVideoUrl(long chatId, int messageId, String text, String videoUrl, Automobile currentAd) {
+    private void saveVideoUrl(long chatId, String text, String videoUrl, Automobile currentAd) {
         if (text != null) {
             botCallback.sendVideoWithInlKeyboard(chatId, currentAd.getDescription(), videoUrl, button.inlKeyboardConfirmation());
             userStateTransport.setUserStateAuto(chatId, VIDEO);
@@ -141,7 +141,7 @@ public class AutoInterpreter {
         botCallback.deleteMessageLater(chatId,messageId,1);
     }
 
-    private void cancelAutoAd(Long chatId, int messageId) {
+    private void cancelAutoAd(Long chatId) {
         currentAd.remove(chatId);
         Message message = botCallback.sendMessageWithInlKeyboard(chatId, "E'lon bekor qilindi", null);
         botCallback.deleteMessageLater(chatId,message.getMessageId(),5);

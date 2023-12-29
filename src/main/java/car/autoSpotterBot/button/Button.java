@@ -1,5 +1,6 @@
 package car.autoSpotterBot.button;
 
+import car.autoSpotterBot.model.Ad;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -63,7 +64,7 @@ public class Button {
         return inlineKeyboardMarkup;
     }
 
-    public InlineKeyboardMarkup inlKeyboardForMyAds(Long adId, Integer nextIndex) {
+    public InlineKeyboardMarkup inlKeyboardForMyAds(Long adId, Integer nextIndex, String className) {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         List<InlineKeyboardButton> row1 = new ArrayList<>();
@@ -73,13 +74,13 @@ public class Button {
         InlineKeyboardButton previous = new InlineKeyboardButton();
         InlineKeyboardButton video = new InlineKeyboardButton();
         deleteAd.setText("E'lonni o'chirish \uD83D\uDD34");
-        deleteAd.setCallbackData(ButtonConstant.deleteAd + "_" + adId);
+        deleteAd.setCallbackData(ButtonConstant.deleteAd + "_" + adId + "_" + nextIndex + "_" + className);
         next.setText("Keyingi rasm ▶\uFE0F");
-        next.setCallbackData(ButtonConstant.nextPhoto + adId + "_" + nextIndex);
+        next.setCallbackData(ButtonConstant.nextPhoto + adId + "_" + nextIndex + "_" + className);
         previous.setText("◀\uFE0F Oldingi rasm");
-        previous.setCallbackData(ButtonConstant.previousPhoto + adId + "_" + nextIndex);
+        previous.setCallbackData(ButtonConstant.previousPhoto + adId + "_" + nextIndex + "_" + className);
         video.setText("Video \uD83D\uDCF9");
-        video.setCallbackData(ButtonConstant.video + adId);
+        video.setCallbackData(ButtonConstant.video + adId + "_" + nextIndex + "_" + className + "_" + className);
         row1.add(previous);
         row1.add(next);
         row2.add(video);
@@ -158,7 +159,7 @@ public class Button {
         InlineKeyboardButton next = new InlineKeyboardButton();
         InlineKeyboardButton previous = new InlineKeyboardButton();
         InlineKeyboardButton video = new InlineKeyboardButton();
-        deleteAd.setText("Favoritdan o'chirish \uD83D\uDD34");
+        deleteAd.setText("Sara e'lonlardan o'chirish \uD83D\uDD34");
         deleteAd.setCallbackData(ButtonConstant.deleteAdFromFavorite + "_" + adId);
         next.setText("Keyingi rasm ▶\uFE0F");
         next.setCallbackData(ButtonConstant.nextPhoto + adId + "_" + nextIndex);
@@ -208,6 +209,7 @@ public class Button {
         row1.add(truck);
         row2.add(otherTrans);
         row2.add(spareParts);
+        row3.add(agroTech);
         row3.add(mainMenu);
         rows.add(row1);
         rows.add(row2);
@@ -264,23 +266,6 @@ public class Button {
         return inlineKeyboardMarkup;
     }
 
-    public ReplyKeyboardMarkup nextPage() {
-        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
-        List<KeyboardRow> keyboard = new ArrayList<>();
-        replyKeyboardMarkup.setResizeKeyboard(true);
-        KeyboardRow row1 = new KeyboardRow();
-        KeyboardRow row2 = new KeyboardRow();
-        row1.add(new KeyboardButton(ButtonConstant.previousPage));
-        row1.add(new KeyboardButton(ButtonConstant.nextPage));
-        row2.add(new KeyboardButton(ButtonConstant.back));
-
-        keyboard.add(row1);
-        keyboard.add(row2);
-
-        replyKeyboardMarkup.setKeyboard(keyboard);
-        return replyKeyboardMarkup;
-    }
-
     public InlineKeyboardMarkup createInlineKeyboardForPages(int currentPage, int totalPages) {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
@@ -321,7 +306,6 @@ public class Button {
         inlineKeyboardMarkup.setKeyboard(rows);
         return inlineKeyboardMarkup;
     }
-
 
 
     public ReplyKeyboardMarkup startMenu() {

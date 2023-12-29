@@ -13,6 +13,7 @@ public abstract class Ad {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "transport_id")
     private Long id;
 
     @ManyToOne
